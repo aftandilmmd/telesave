@@ -26,6 +26,7 @@ TeleSave cuts that down to one move: **drag the file up to your menu bar** and d
 ### Drag, drop, done
 - Drag files toward the **menu bar** and a drop shelf appears right under the TeleSave icon. Or drop them into the panel that opens when you click the icon.
 - Prefer the keyboard? **Copy files in Finder and press ⌘V** in the panel. Copied images and screenshots paste too.
+- Or right-click files in Finder and choose **Send to TeleSave** (can be turned off in Settings).
 - Prefer clicking? **Choose files…** works too.
 - Drop a **folder** and send it as a single zip, or send every file inside it, your choice.
 - A progress percentage right in the menu bar, plus upload speed and time remaining in the panel.
@@ -50,7 +51,7 @@ TeleSave cuts that down to one move: **drag the file up to your menu bar** and d
 ### Your files at a glance
 - Every upload shows a **Quick Look preview**, its size, and when it was uploaded.
 - **Download** any uploaded file back to your Downloads folder, or **delete** it from Telegram, right from the list.
-- **Browse the whole chat:** the list shows every file in the selected chat, not just TeleSave's uploads, with search by file name or caption and filters for documents, media and audio. Prefer to see only your TeleSave uploads? Switch it off in Settings.
+- **Browse the whole chat:** the list shows every file in the selected chat, not just TeleSave's uploads, with accent- and case-insensitive search by file name or caption, and filters for documents, images, videos and audio (images and videos include the ones sent in original quality). Prefer to see only your TeleSave uploads? Switch it off in Settings.
 - A notification tells you when your uploads are done.
 
 ### Feels native

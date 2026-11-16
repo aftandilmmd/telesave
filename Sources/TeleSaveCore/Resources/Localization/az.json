@@ -74,7 +74,6 @@
     "Dosya ara": "Fayl axtar",
     "Tümü": "Hamısı",
     "Belge": "Sənəd",
-    "Medya": "Media",
     "Ses": "Səs",
     "Bu sohbette dosya yok": "Bu söhbətdə fayl yoxdur",
     "Sonuç yok": "Nəticə yoxdur",
@@ -174,6 +173,13 @@
     "Güncelleme var: %@": "Yeniləmə var: %@",
     "Yeni sürümü indir": "Yeni versiyanı endir",
     "TeleSave %@ yayımlandı. İndirmek için tıklayın.": "TeleSave %@ buraxıldı. Endirmək üçün klikləyin.",
-    "Sistem (%@)": "Sistem (%@)"
+    "Sistem (%@)": "Sistem (%@)",
+    "TeleSave'e gönder": "TeleSave-ə göndər",
+    "Sağ tık menüsünde “%@”": "Sağ klik menyusunda “%@”",
+    "Finder'da dosya ve klasörlere sağ tıklayınca görünür. Menü adı macOS diline göre gösterilir.": "Finder-də fayl və qovluqlara sağ klikləyəndə görünür. Menyu adı macOS dilinə görə göstərilir.",
+    "Resim": "Şəkil",
+    "Video": "Video",
+    "Henüz eşleşme yok": "Hələ uyğunluq yoxdur",
+    "Aramaya devam et": "Axtarışa davam et"
   }
 }

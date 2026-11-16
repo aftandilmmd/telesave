@@ -225,8 +225,8 @@ public protocol TelegramClient: UploadTransport {
     func downloadMessageFile(messageId: Int64, in destination: UploadDestination?) async throws -> String
     /// Deletes messages for everyone.
     func deleteMessages(_ messageIds: [Int64], in destination: UploadDestination?) async throws
-    /// One page of file messages in a chat, newest first. `fromMessageId` 0 starts at the newest.
+    /// One page of file messages in a chat, newest first. Pass the previous page's cursor to continue; nil starts over.
     func searchChatFiles(in destination: UploadDestination?, query: String, filter: ChatFileFilter,
-                         fromMessageId: Int64, limit: Int) async throws -> ChatFilePage
+                         cursor: ChatFileCursor?, limit: Int) async throws -> ChatFilePage
     func close()
 }

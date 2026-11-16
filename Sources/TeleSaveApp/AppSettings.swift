@@ -14,6 +14,8 @@ struct AppSettings: Equatable {
     var showChatFiles = true
     /// UI language code, or `L10n.systemCode` to follow macOS.
     var language = L10n.systemCode
+    /// "Send to TeleSave" in Finder's right-click menu.
+    var finderServiceEnabled = true
 
     private enum Key {
         static let sendMediaCompressed = "sendMediaCompressed"
@@ -25,6 +27,7 @@ struct AppSettings: Equatable {
         static let folderMode = "folderMode"
         static let showChatFiles = "showChatFiles"
         static let language = "appLanguage"
+        static let finderServiceEnabled = "finderServiceEnabled"
         static let launchAtLoginConfigured = "launchAtLoginConfigured"
     }
 
@@ -37,6 +40,7 @@ struct AppSettings: Equatable {
         if defaults.object(forKey: Key.notificationsEnabled) != nil { s.notificationsEnabled = defaults.bool(forKey: Key.notificationsEnabled) }
         if defaults.object(forKey: Key.openPopoverOnDrop) != nil { s.openPopoverOnDrop = defaults.bool(forKey: Key.openPopoverOnDrop) }
         if defaults.object(forKey: Key.showChatFiles) != nil { s.showChatFiles = defaults.bool(forKey: Key.showChatFiles) }
+        if defaults.object(forKey: Key.finderServiceEnabled) != nil { s.finderServiceEnabled = defaults.bool(forKey: Key.finderServiceEnabled) }
         s.language = defaults.string(forKey: Key.language) ?? L10n.systemCode
         s.folderMode = defaults.string(forKey: Key.folderMode).flatMap(FolderMode.init(rawValue:)) ?? .zip
         return s
@@ -52,6 +56,7 @@ struct AppSettings: Equatable {
         defaults.set(folderMode.rawValue, forKey: Key.folderMode)
         defaults.set(showChatFiles, forKey: Key.showChatFiles)
         defaults.set(language, forKey: Key.language)
+        defaults.set(finderServiceEnabled, forKey: Key.finderServiceEnabled)
     }
 
     var queueSettings: UploadQueue.Settings {

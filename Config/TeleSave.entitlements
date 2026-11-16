@@ -10,6 +10,11 @@
 	<true/>
 	<key>com.apple.security.files.downloads.read-write</key>
 	<true/>
+	<!-- Lets the app show/hide its "Send to TeleSave" Finder service (NSServicesStatus in the pbs domain). -->
+	<key>com.apple.security.temporary-exception.shared-preference.read-write</key>
+	<array>
+		<string>pbs</string>
+	</array>
 	<key>com.apple.security.files.bookmarks.app-scope</key>
 	<true/>
 </dict>

@@ -1,4 +1,5 @@
 import Foundation
+import UniformTypeIdentifiers
 
 /// A file message in a chat, as listed in the "Dosyalar" tab.
 public struct ChatFile: Identifiable, Hashable, Sendable {
@@ -22,11 +23,12 @@ public struct ChatFile: Identifiable, Hashable, Sendable {
     public let minithumbnail: Data?
     public let thumbnailFileId: Int32?
     public let isOutgoing: Bool
+    public let mimeType: String
 
     public var id: Int64 { messageId }
 
     public init(messageId: Int64, fileId: Int32, kind: Kind, fileName: String, size: Int64, date: Date, caption: String,
-                minithumbnail: Data?, thumbnailFileId: Int32?, isOutgoing: Bool) {
+                minithumbnail: Data?, thumbnailFileId: Int32?, isOutgoing: Bool, mimeType: String = "") {
         self.messageId = messageId
         self.fileId = fileId
         self.kind = kind
@@ -37,37 +39,131 @@ public struct ChatFile: Identifiable, Hashable, Sendable {
         self.minithumbnail = minithumbnail
         self.thumbnailFileId = thumbnailFileId
         self.isOutgoing = isOutgoing
+        self.mimeType = mimeType
+    }
+
+    private var contentType: UTType? {
+        UTType(mimeType: mimeType) ?? UTType(filenameExtension: (fileName as NSString).pathExtension)
+    }
+
+    /// A photo, or an image sent as a document (TeleSave's default for original quality).
+    public var isImage: Bool {
+        kind == .photo || (kind == .document && contentType?.conforms(to: .image) == true)
+    }
+
+    /// A video, or a video sent as a document.
+    public var isVideo: Bool {
+        kind == .video || (kind == .document && contentType?.conforms(to: .movie) == true)
     }
 }
 
 public enum ChatFileFilter: String, CaseIterable, Sendable {
     case all
     case documents
-    case media
+    case images
+    case videos
     case audio
 
-    /// TDLib `SearchMessagesFilter`. `all` searches every message and keeps only file messages.
-    public var tdFilter: String {
+    /// One TDLib search per stream; results are filtered by `keep` and merged newest-first.
+    /// Images and videos also search documents, because files sent in original quality are documents.
+    public var streams: [ChatFileStream] {
         switch self {
-        case .all: return "searchMessagesFilterEmpty"
-        case .documents: return "searchMessagesFilterDocument"
-        case .media: return "searchMessagesFilterPhotoAndVideo"
-        case .audio: return "searchMessagesFilterAudio"
+        case .all: return [ChatFileStream(tdFilter: "searchMessagesFilterEmpty") { _ in true }]
+        case .documents: return [ChatFileStream(tdFilter: "searchMessagesFilterDocument") { !$0.isImage && !$0.isVideo }]
+        case .images: return [
+            ChatFileStream(tdFilter: "searchMessagesFilterPhoto") { _ in true },
+            ChatFileStream(tdFilter: "searchMessagesFilterDocument") { $0.isImage }
+        ]
+        case .videos: return [
+            ChatFileStream(tdFilter: "searchMessagesFilterVideo") { _ in true },
+            ChatFileStream(tdFilter: "searchMessagesFilterDocument") { $0.isVideo }
+        ]
+        case .audio: return [ChatFileStream(tdFilter: "searchMessagesFilterAudio") { _ in true }]
         }
     }
 }
 
+public struct ChatFileStream: Sendable {
+    public let tdFilter: String
+    public let keep: @Sendable (ChatFile) -> Bool
+}
+
+/// Where the next page continues: per-stream search position plus items fetched but not yet shown.
+public struct ChatFileCursor: Equatable, Sendable {
+    struct StreamState: Equatable, Sendable {
+        var fromMessageId: Int64 = 0
+        var buffer: [ChatFile] = []
+        var exhausted = false
+    }
+    var streams: [StreamState]
+}
+
 public struct ChatFilePage: Equatable, Sendable {
     public var files: [ChatFile]
-    /// Pass as `fromMessageId` for the next page; 0 means there are no more.
-    public var nextFromMessageId: Int64
+    /// nil when everything has been listed.
+    public var cursor: ChatFileCursor?
 
-    public init(files: [ChatFile], nextFromMessageId: Int64) {
+    public init(files: [ChatFile], cursor: ChatFileCursor?) {
         self.files = files
-        self.nextFromMessageId = nextFromMessageId
+        self.cursor = cursor
     }
 
-    public var isLastPage: Bool { nextFromMessageId == 0 }
+    public var isLastPage: Bool { cursor == nil }
+}
+
+/// Merges one or more TDLib searches into a single newest-first list, page by page.
+public enum ChatFileSearch {
+    /// Fetches one page of one stream: (messages already parsed to files, next from_message_id; 0 = end).
+    public typealias Fetch = @Sendable (_ tdFilter: String, _ fromMessageId: Int64, _ limit: Int) async throws -> ([ChatFile], Int64)
+
+    /// Upper bound on server requests per page, so sparse streams cannot loop for long.
+    static let maxRequestsPerPage = 8
+
+    /// `query` is matched locally against file name and caption (see `SearchText`): Telegram's server
+    /// search does not reliably match file names and is not accent-insensitive.
+    public static func page(filter: ChatFileFilter, query: String = "", cursor: ChatFileCursor?, limit: Int, fetch: Fetch) async throws -> ChatFilePage {
+        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        let specs = filter.streams.map { stream in
+            trimmed.isEmpty ? stream : ChatFileStream(tdFilter: stream.tdFilter) {
+                stream.keep($0) && SearchText.matches($0.fileName + " " + $0.caption, query: trimmed)
+            }
+        }
+        var state = cursor ?? ChatFileCursor(streams: specs.map { _ in .init() })
+        var files: [ChatFile] = []
+        var requests = 0
+
+        while files.count < limit {
+            // Refill: a stream that may still have items must have a buffered head before we can merge,
+            // otherwise an older item from another stream could be shown before a newer one from it.
+            for i in state.streams.indices where state.streams[i].buffer.isEmpty && !state.streams[i].exhausted {
+                guard requests < maxRequestsPerPage else { break }
+                requests += 1
+                let (fetched, next) = try await fetch(specs[i].tdFilter, state.streams[i].fromMessageId, limit)
+                state.streams[i].buffer.append(contentsOf: fetched.filter(specs[i].keep))
+                state.streams[i].fromMessageId = next
+                state.streams[i].exhausted = next == 0
+            }
+            let waiting = state.streams.contains { $0.buffer.isEmpty && !$0.exhausted }
+            if waiting && requests >= maxRequestsPerPage { break }
+            if waiting { continue }
+
+            // Merge: newest head first, until a live stream runs dry.
+            var emitted = false
+            while files.count < limit {
+                guard let best = state.streams.indices
+                    .filter({ !state.streams[$0].buffer.isEmpty })
+                    .max(by: { state.streams[$0].buffer[0].messageId < state.streams[$1].buffer[0].messageId }) else { break }
+                files.append(state.streams[best].buffer.removeFirst())
+                emitted = true
+                if state.streams[best].buffer.isEmpty && !state.streams[best].exhausted { break }
+            }
+            let done = state.streams.allSatisfy { $0.exhausted && $0.buffer.isEmpty }
+            if done { return ChatFilePage(files: files, cursor: nil) }
+            if !emitted && requests >= maxRequestsPerPage { break }
+        }
+        let done = state.streams.allSatisfy { $0.exhausted && $0.buffer.isEmpty }
+        return ChatFilePage(files: files, cursor: done ? nil : state)
+    }
 }
 
 /// Turns a TDLib `message` JSON object into a ChatFile; nil for messages without a file.
@@ -130,6 +226,7 @@ public enum ChatFileParser {
         }
 
         guard let file, let fileId = int64(file["id"]) else { return nil }
+        let mimeType = media?["mime_type"] as? String ?? (kind == .photo ? "image/jpeg" : "")
         if thumbnail == nil { thumbnail = media?["thumbnail"] as? [String: Any] }
         if mini == nil { mini = media?["minithumbnail"] as? [String: Any] }
         if name.isEmpty { name = L("Dosya %@", fileNameDate(date)) }
@@ -140,7 +237,7 @@ public enum ChatFileParser {
 
         return ChatFile(messageId: messageId, fileId: Int32(truncatingIfNeeded: fileId), kind: kind, fileName: name,
                         size: size, date: date, caption: caption, minithumbnail: miniData,
-                        thumbnailFileId: thumbnailFileId, isOutgoing: isOutgoing)
+                        thumbnailFileId: thumbnailFileId, isOutgoing: isOutgoing, mimeType: mimeType)
     }
 
     private static func int64(_ value: Any?) -> Int64? {

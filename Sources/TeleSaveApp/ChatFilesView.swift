@@ -16,7 +16,8 @@ struct ChatFilesView: View {
                 Picker("", selection: $filter) {
                     Text(L("Tümü")).tag(ChatFileFilter.all)
                     Text(L("Belge")).tag(ChatFileFilter.documents)
-                    Text(L("Medya")).tag(ChatFileFilter.media)
+                    Text(L("Resim")).tag(ChatFileFilter.images)
+                    Text(L("Video")).tag(ChatFileFilter.videos)
                     Text(L("Ses")).tag(ChatFileFilter.audio)
                 }
                 .labelsHidden()
@@ -59,6 +60,15 @@ struct ChatFilesView: View {
             placeholder(error, symbol: "exclamationmark.triangle")
         } else if pending.isEmpty && model.chatFiles.isEmpty && model.chatFilesLoading {
             VStack { Spacer(); ProgressView().controlSize(.small); Spacer() }.frame(maxWidth: .infinity)
+        } else if pending.isEmpty && model.chatFiles.isEmpty && !model.chatFilesComplete {
+            // Scanned a while without a match, but older messages remain.
+            VStack(spacing: 8) {
+                Spacer()
+                Text(L("Henüz eşleşme yok")).foregroundStyle(.secondary)
+                Button(L("Aramaya devam et")) { Task { await model.loadMoreChatFiles() } }
+                Spacer()
+            }
+            .frame(maxWidth: .infinity)
         } else if pending.isEmpty && model.chatFiles.isEmpty {
             placeholder(query.isEmpty ? L("Bu sohbette dosya yok") : L("Sonuç yok"), symbol: "doc")
         } else {

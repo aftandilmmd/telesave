@@ -65,6 +65,17 @@ sed -e "s/__BUNDLE_ID__/${BUNDLE_ID}/" \
 plutil -lint "$APP/Contents/Info.plist" >/dev/null
 printf 'APPL????' > "$APP/Contents/PkgInfo"
 
+# Finder "Send to TeleSave" menu title per language, from the same translation files the UI uses.
+python3 - "$APP/Contents/Resources" <<'PY'
+import json, pathlib, sys
+resources = pathlib.Path(sys.argv[1])
+for file in sorted(pathlib.Path("Sources/TeleSaveCore/Resources/Localization").glob("*.json")):
+    title = json.loads(file.read_text())["strings"]["TeleSave'e gönder"].replace('"', '\\"')
+    lproj = resources / f"{file.stem}.lproj"
+    lproj.mkdir(exist_ok=True)
+    (lproj / "ServicesMenu.strings").write_text(f'"Send to TeleSave" = "{title}";\n', encoding="utf-8")
+PY
+
 if [[ ! -f Config/AppIcon.icns ]]; then
   echo "› Rendering icon"
   swift scripts/make-icon.swift Config/AppIcon.icns

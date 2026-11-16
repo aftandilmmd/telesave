@@ -385,32 +385,28 @@ public final class TDLibTelegramClient: TelegramClient, @unchecked Sendable {
     }
 
     public func searchChatFiles(in destination: UploadDestination?, query: String, filter: ChatFileFilter,
-                                fromMessageId: Int64, limit: Int) async throws -> ChatFilePage {
+                                cursor: ChatFileCursor?, limit: Int) async throws -> ChatFilePage {
         let chatId = try await resolveChat(destination)
-        var files: [ChatFile] = []
-        var from = fromMessageId
-        // With the "all" filter text messages come back too and are dropped, so a page can be thin:
-        // keep fetching (a few rounds at most) until it is reasonably full.
-        for _ in 0..<(filter == .all ? 5 : 1) {
+        let topic = destination?.forumTopicId
+        return try await ChatFileSearch.page(filter: filter, query: query, cursor: cursor, limit: limit) { [weak self] tdFilter, from, limit in
+            guard let self else { return ([], 0) }
             var request: TDObject = [
                 "@type": "searchChatMessages",
                 "chat_id": chatId,
-                "query": query,
+                // Matching happens locally (file names, accent-insensitive), so the server lists everything.
+                "query": "",
                 "from_message_id": from,
                 "offset": 0,
                 "limit": limit,
-                "filter": ["@type": filter.tdFilter] as TDObject
+                "filter": ["@type": tdFilter] as TDObject
             ]
-            if let topic = destination?.forumTopicId {
+            if let topic {
                 request["topic_id"] = ["@type": "messageTopicForum", "forum_topic_id": topic] as TDObject
             }
             let result = try await self.request(request)
             let messages = result["messages"] as? [TDObject] ?? []
-            files.append(contentsOf: messages.compactMap(ChatFileParser.parse))
-            from = result.int64("next_from_message_id") ?? 0
-            if from == 0 || files.count >= limit / 2 { break }
+            return (messages.compactMap(ChatFileParser.parse), result.int64("next_from_message_id") ?? 0)
         }
-        return ChatFilePage(files: files, nextFromMessageId: from)
     }
 
     static func content(for file: OutgoingFile) -> TDObject {

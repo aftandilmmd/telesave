@@ -5,6 +5,7 @@ import AppKit
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var model: AppModel?
     private var statusController: StatusItemController?
+    private var serviceProvider: FinderServiceProvider?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         L10n.selectedCode = AppSettings.load().language
@@ -13,6 +14,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let model = AppModel()
         self.model = model
         statusController = StatusItemController(model: model)
+        let provider = FinderServiceProvider(model: model)
+        serviceProvider = provider
+        NSApp.servicesProvider = provider
+        // Keep Finder's menu in sync with the setting (also registers the service on first launch).
+        FinderService.setEnabled(model.settings.finderServiceEnabled)
         if model.phase == .needsCredentials || !model.canUpload {
             // First run: open the popover so the user sees the setup / login step.
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in

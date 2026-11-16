@@ -76,10 +76,23 @@ final class ChatFileParserTests: XCTestCase {
         XCTAssertNil(ChatFileParser.parse(["id": 6]))
     }
 
-    func testFilters() {
-        XCTAssertEqual(ChatFileFilter.documents.tdFilter, "searchMessagesFilterDocument")
-        XCTAssertEqual(ChatFileFilter.media.tdFilter, "searchMessagesFilterPhotoAndVideo")
-        XCTAssertTrue(ChatFilePage(files: [], nextFromMessageId: 0).isLastPage)
+    func testFilterStreams() {
+        XCTAssertEqual(ChatFileFilter.images.streams.map(\.tdFilter), ["searchMessagesFilterPhoto", "searchMessagesFilterDocument"])
+        XCTAssertEqual(ChatFileFilter.videos.streams.map(\.tdFilter), ["searchMessagesFilterVideo", "searchMessagesFilterDocument"])
+        XCTAssertEqual(ChatFileFilter.documents.streams.map(\.tdFilter), ["searchMessagesFilterDocument"])
+        XCTAssertTrue(ChatFilePage(files: [], cursor: nil).isLastPage)
+    }
+
+    func testImageAndVideoDetectionIncludesDocuments() {
+        func doc(_ name: String, mime: String = "") -> ChatFile {
+            ChatFile(messageId: 1, fileId: 1, kind: .document, fileName: name, size: 1, date: Date(), caption: "",
+                     minithumbnail: nil, thumbnailFileId: nil, isOutgoing: true, mimeType: mime)
+        }
+        XCTAssertTrue(doc("IMG_1.HEIC").isImage)
+        XCTAssertTrue(doc("x", mime: "image/png").isImage)
+        XCTAssertTrue(doc("clip.mov").isVideo)
+        XCTAssertFalse(doc("rapor.pdf").isImage)
+        XCTAssertFalse(doc("rapor.pdf").isVideo)
     }
 }
 
@@ -108,5 +121,92 @@ final class SentMessageRegistryTests: XCTestCase {
         registry.save(to: url)
         XCTAssertTrue(SentMessageRegistry.load(from: url).contains(owner: 1, chatId: nil, messageId: 100))
         XCTAssertEqual(SentMessageRegistry.load(from: dir.appendingPathComponent("missing.json")).count, 0)
+    }
+}
+
+final class ChatFileSearchTests: XCTestCase {
+    private func file(_ id: Int64, _ name: String, kind: ChatFile.Kind = .document) -> ChatFile {
+        ChatFile(messageId: id, fileId: Int32(id), kind: kind, fileName: name, size: 1, date: Date(), caption: "",
+                 minithumbnail: nil, thumbnailFileId: nil, isOutgoing: true)
+    }
+
+    /// Fake server: each filter has its messages newest-first; pages are `limit` long.
+    private final class Server: @unchecked Sendable {
+        let data: [String: [ChatFile]]
+        private(set) var requests = 0
+        init(_ data: [String: [ChatFile]]) { self.data = data }
+
+        func fetch(_ filter: String, _ from: Int64, _ limit: Int) -> ([ChatFile], Int64) {
+            requests += 1
+            let all = data[filter] ?? []
+            let start = from == 0 ? 0 : (all.firstIndex { $0.messageId < from } ?? all.count)
+            let page = Array(all[start..<min(start + limit, all.count)])
+            let next = start + limit < all.count ? page.last!.messageId : 0
+            return (page, next)
+        }
+    }
+
+    private func collectAll(_ filter: ChatFileFilter, server: Server, limit: Int) async throws -> [Int64] {
+        var ids: [Int64] = []
+        var cursor: ChatFileCursor?
+        repeat {
+            let page = try await ChatFileSearch.page(filter: filter, cursor: cursor, limit: limit) { f, from, l in server.fetch(f, from, l) }
+            ids += page.files.map(\.messageId)
+            cursor = page.cursor
+        } while cursor != nil
+        return ids
+    }
+
+    func testImagesMergePhotosAndImageDocumentsNewestFirstAcrossPages() async throws {
+        let server = Server([
+            "searchMessagesFilterPhoto": [file(90, "p", kind: .photo), file(60, "p", kind: .photo), file(20, "p", kind: .photo)],
+            "searchMessagesFilterDocument": [
+                file(100, "a.jpg"), file(80, "report.pdf"), file(70, "b.png"), file(50, "c.heic"),
+                file(40, "notes.txt"), file(10, "d.jpeg")
+            ]
+        ])
+        let ids = try await collectAll(.images, server: server, limit: 2)
+        XCTAssertEqual(ids, [100, 90, 70, 60, 50, 20, 10], "merged by recency, PDFs/TXT excluded, no gaps or duplicates")
+    }
+
+    func testDocumentsExcludeImagesAndVideos() async throws {
+        let server = Server(["searchMessagesFilterDocument": [file(3, "a.pdf"), file(2, "b.mp4"), file(1, "c.png")]])
+        let ids = try await collectAll(.documents, server: server, limit: 10)
+        XCTAssertEqual(ids, [3])
+    }
+
+    func testSparseStreamDoesNotLoopForever() async throws {
+        // 200 PDFs and no images: every document page is filtered out entirely.
+        let docs = (1...200).reversed().map { file(Int64($0), "f\($0).pdf") }
+        let server = Server(["searchMessagesFilterDocument": docs])
+        let page = try await ChatFileSearch.page(filter: .images, cursor: nil, limit: 10) { f, from, l in server.fetch(f, from, l) }
+        XCTAssertTrue(page.files.isEmpty)
+        XCTAssertLessThanOrEqual(server.requests, ChatFileSearch.maxRequestsPerPage)
+        // Continuing eventually reaches the end.
+        let ids = try await collectAll(.images, server: server, limit: 10)
+        XCTAssertEqual(ids, [])
+    }
+}
+
+final class SearchTextTests: XCTestCase {
+    func testCaseAndTurkishAzerbaijaniFolding() {
+        XCTAssertTrue(SearchText.matches("Iğdır Raporu.pdf", query: "igdir"))
+        XCTAssertTrue(SearchText.matches("igdir.pdf", query: "IĞDIR"))
+        XCTAssertTrue(SearchText.matches("ŞEMA_çizim.PNG", query: "sema cizim"))
+        XCTAssertTrue(SearchText.matches("Əli müqavilə.docx", query: "eli muqavile"))
+        XCTAssertTrue(SearchText.matches("Öğrenci Listesi.xlsx", query: "liste ogrenci"), "words in any order")
+        XCTAssertTrue(SearchText.matches("İstanbul.jpg", query: "istanbul"))
+        XCTAssertFalse(SearchText.matches("rapor.pdf", query: "fatura"))
+        XCTAssertFalse(SearchText.matches("rapor.pdf", query: "rapor fatura"), "all words must match")
+    }
+
+    func testQueryMatchesFileNameAndCaptionLocally() async throws {
+        func file(_ id: Int64, _ name: String, caption: String = "") -> ChatFile {
+            ChatFile(messageId: id, fileId: Int32(id), kind: .document, fileName: name, size: 1, date: Date(),
+                     caption: caption, minithumbnail: nil, thumbnailFileId: nil, isOutgoing: true)
+        }
+        let all = [file(4, "Kira Sözleşmesi.pdf"), file(3, "notes.txt", caption: "sozlesme taslagi"), file(2, "foto.jpg"), file(1, "SOZLESME-eski.pdf")]
+        let page = try await ChatFileSearch.page(filter: .all, query: "sözleşme", cursor: nil, limit: 10) { _, _, _ in (all, 0) }
+        XCTAssertEqual(page.files.map(\.messageId), [4, 3, 1])
     }
 }

@@ -59,7 +59,7 @@ final class AppModel {
     private(set) var busyChatFiles: Set<Int64> = []
     /// Messages sent by TeleSave from this Mac (shown with a badge in the chat file list).
     private(set) var sentRegistry = SentMessageRegistry.load(from: AppPaths.sentMessages)
-    private var chatFilesNext: Int64 = 0
+    private var chatFilesCursor: ChatFileCursor?
     /// Bumped on every reload so results of an older search are dropped.
     private var chatFilesGeneration = 0
     private var chatFilesQuery = ""
@@ -74,6 +74,9 @@ final class AppModel {
             guard settings != oldValue else { return }
             settings.save()
             L10n.selectedCode = settings.language
+            if settings.finderServiceEnabled != oldValue.finderServiceEnabled {
+                FinderService.setEnabled(settings.finderServiceEnabled)
+            }
             let queueSettings = settings.queueSettings
             Task { await queue?.update(settings: queueSettings) }
         }
@@ -578,7 +581,7 @@ final class AppModel {
         chatFilesQuery = query
         chatFilesFilter = filter
         chatFiles = []
-        chatFilesNext = 0
+        chatFilesCursor = nil
         chatFilesComplete = false
         chatFilesError = nil
         chatFilesLoading = false
@@ -590,16 +593,25 @@ final class AppModel {
         let generation = chatFilesGeneration
         chatFilesLoading = true
         do {
-            let page = try await client.searchChatFiles(
-                in: destination.isSavedMessages ? nil : destination,
-                query: chatFilesQuery, filter: chatFilesFilter,
-                fromMessageId: chatFilesNext, limit: Self.chatFilesPageSize
-            )
-            guard generation == chatFilesGeneration else { return }
-            let known = Set(chatFiles.map(\.id))
-            chatFiles.append(contentsOf: page.files.filter { !known.contains($0.id) })
-            chatFilesNext = page.nextFromMessageId
-            chatFilesComplete = page.isLastPage
+            // A search may scan several pages before anything matches; keep going a while so an empty
+            // first page does not look like "no results". After that the user can continue manually.
+            var added = 0
+            var rounds = 0
+            repeat {
+                let page = try await client.searchChatFiles(
+                    in: destination.isSavedMessages ? nil : destination,
+                    query: chatFilesQuery, filter: chatFilesFilter,
+                    cursor: chatFilesCursor, limit: Self.chatFilesPageSize
+                )
+                guard generation == chatFilesGeneration else { return }
+                let known = Set(chatFiles.map(\.id))
+                let fresh = page.files.filter { !known.contains($0.id) }
+                chatFiles.append(contentsOf: fresh)
+                added += fresh.count
+                chatFilesCursor = page.cursor
+                chatFilesComplete = page.isLastPage
+                rounds += 1
+            } while added == 0 && !chatFilesComplete && rounds < 6
         } catch {
             guard generation == chatFilesGeneration else { return }
             chatFilesError = L("Dosyalar yüklenemedi: %@", error.localizedDescription)

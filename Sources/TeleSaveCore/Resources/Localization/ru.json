@@ -74,7 +74,6 @@
     "Dosya ara": "Поиск файлов",
     "Tümü": "Все",
     "Belge": "Документы",
-    "Medya": "Медиа",
     "Ses": "Аудио",
     "Bu sohbette dosya yok": "В этом чате нет файлов",
     "Sonuç yok": "Ничего не найдено",
@@ -174,6 +173,13 @@
     "Güncelleme var: %@": "Доступно обновление: %@",
     "Yeni sürümü indir": "Скачать новую версию",
     "TeleSave %@ yayımlandı. İndirmek için tıklayın.": "Вышел TeleSave %@. Нажмите, чтобы скачать.",
-    "Sistem (%@)": "Системный (%@)"
+    "Sistem (%@)": "Системный (%@)",
+    "TeleSave'e gönder": "Отправить в TeleSave",
+    "Sağ tık menüsünde “%@”": "«%@» в контекстном меню",
+    "Finder'da dosya ve klasörlere sağ tıklayınca görünür. Menü adı macOS diline göre gösterilir.": "Появляется при щелчке правой кнопкой по файлам и папкам в Finder. Название пункта зависит от языка macOS.",
+    "Resim": "Изображения",
+    "Video": "Видео",
+    "Henüz eşleşme yok": "Пока ничего не найдено",
+    "Aramaya devam et": "Искать дальше"
   }
 }

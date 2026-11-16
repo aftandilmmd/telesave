@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>CFBundleDevelopmentRegion</key>
-	<string>tr</string>
+	<string>en</string>
 	<key>CFBundleDisplayName</key>
 	<string>TeleSave</string>
 	<key>CFBundleExecutable</key>
@@ -30,6 +30,27 @@
 	<true/>
 	<key>LSUIElement</key>
 	<true/>
+	<key>NSServices</key>
+	<array>
+		<dict>
+			<key>NSMenuItem</key>
+			<dict>
+				<key>default</key>
+				<string>Send to TeleSave</string>
+			</dict>
+			<key>NSMessage</key>
+			<string>sendToTeleSave</string>
+			<key>NSPortName</key>
+			<string>TeleSave</string>
+			<key>NSSendFileTypes</key>
+			<array>
+				<string>public.item</string>
+			</array>
+			<!-- Presence of NSRequiredContext makes the service enabled by default. -->
+			<key>NSRequiredContext</key>
+			<dict/>
+		</dict>
+	</array>
 	<key>NSHighResolutionCapable</key>
 	<true/>
 	<key>NSHumanReadableCopyright</key>

@@ -74,7 +74,6 @@
     "Dosya ara": "Search files",
     "Tümü": "All",
     "Belge": "Documents",
-    "Medya": "Media",
     "Ses": "Audio",
     "Bu sohbette dosya yok": "No files in this chat",
     "Sonuç yok": "No results",
@@ -174,6 +173,13 @@
     "Güncelleme var: %@": "Update available: %@",
     "Yeni sürümü indir": "Download the new version",
     "TeleSave %@ yayımlandı. İndirmek için tıklayın.": "TeleSave %@ is out. Click to download.",
-    "Sistem (%@)": "System (%@)"
+    "Sistem (%@)": "System (%@)",
+    "TeleSave'e gönder": "Send to TeleSave",
+    "Sağ tık menüsünde “%@”": "“%@” in the right-click menu",
+    "Finder'da dosya ve klasörlere sağ tıklayınca görünür. Menü adı macOS diline göre gösterilir.": "Appears when you right-click files and folders in Finder. The menu name follows your macOS language.",
+    "Resim": "Images",
+    "Video": "Videos",
+    "Henüz eşleşme yok": "No matches yet",
+    "Aramaya devam et": "Keep searching"
   }
 }

@@ -4,10 +4,7 @@ on:
   push:
     branches: [main, linux]
     paths:
-      - "linux/**"
-      - "windows/src/TeleSave.Core/**"
-      - "windows/src/TeleSave.TdLib/**"
-      - "windows/src/TeleSave.UI/**"
+      - "desktop/**"
       - "Sources/TeleSaveCore/Resources/Localization/**"
       - ".github/workflows/linux.yml"
   workflow_dispatch:
@@ -20,11 +17,14 @@ permissions:
 env:
   # Same TDLib as the macOS and Windows builds (1.8.70).
   TDLIB_COMMIT: 23383aef218a3123f02b744bfa91bde21056a814
+  # Compiled TDLib is kept as assets of this pre-release, so builds on any branch or tag reuse it.
+  TDLIB_RELEASE: tdlib-1.8.70-23383ae
   DOTNET_CLI_TELEMETRY_OPTOUT: "1"
 
 jobs:
   tdjson:
     name: TDLib libtdjson.so (${{ matrix.arch }})
+    if: github.event_name != 'release' || startsWith(github.event.release.tag_name, 'v')
     strategy:
       fail-fast: false
       matrix:
@@ -36,16 +36,22 @@ jobs:
     # Ubuntu 22.04 (glibc 2.35) so the library also loads on older distributions.
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 240
+    env:
+      GH_TOKEN: ${{ github.token }}
+      ASSET: tdjson-linux-${{ matrix.arch }}.tar.gz
     steps:
-      - name: Cache tdjson
-        id: cache
-        uses: actions/cache@v4
-        with:
-          path: tdjson
-          key: tdjson-linux-${{ env.TDLIB_COMMIT }}-${{ matrix.arch }}-v1
+      - name: Prebuilt TDLib
+        id: prebuilt
+        run: |
+          mkdir -p tdjson
+          if gh release download "$TDLIB_RELEASE" --repo "$GITHUB_REPOSITORY" --pattern "$ASSET" 2>/dev/null; then
+            tar -xzf "$ASSET" -C tdjson && echo "found=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "found=false" >> "$GITHUB_OUTPUT"
+          fi
 
-      - name: Build tdjson
-        if: steps.cache.outputs.cache-hit != 'true'
+      - name: Build TDLib (first time only)
+        if: steps.prebuilt.outputs.found != 'true'
         run: |
           sudo apt-get update -q
           sudo apt-get install -y -q make git zlib1g-dev libssl-dev gperf g++
@@ -57,11 +63,110 @@ jobs:
                 -DOPENSSL_USE_STATIC_LIBS=TRUE -DZLIB_USE_STATIC_LIBS=TRUE \
                 -DCMAKE_SHARED_LINKER_FLAGS="-static-libstdc++ -static-libgcc" ..
           cmake --build . --target tdjson -j 4
-          mkdir -p "$GITHUB_WORKSPACE/tdjson"
           cp -L libtdjson.so "$GITHUB_WORKSPACE/tdjson/libtdjson.so"
-          ldd "$GITHUB_WORKSPACE/tdjson/libtdjson.so"
+          cd "$GITHUB_WORKSPACE"
+          ldd tdjson/libtdjson.so
+          tar -czf "$ASSET" -C tdjson libtdjson.so
+          gh release view "$TDLIB_RELEASE" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
+            gh release create "$TDLIB_RELEASE" --repo "$GITHUB_REPOSITORY" --prerelease --target main \
+              --title "TDLib 1.8.70 native libraries (CI build cache)" \
+              --notes "Compiled TDLib used by the Windows and Linux builds. Not an app release." || true
+          gh release upload "$TDLIB_RELEASE" "$ASSET" --repo "$GITHUB_REPOSITORY" --clobber
 
       - uses: actions/upload-artifact@v4
         with:
           name: tdjson-linux-${{ matrix.arch }}
           path: tdjson
+
+  test:
+    name: Tests (Core + UI)
+    if: github.event_name != 'release' || startsWith(github.event.release.tag_name, 'v')
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - name: Core tests
+        run: dotnet test desktop/tests/TeleSave.Core.Tests -c Release
+      - name: UI tests (renders panel snapshots)
+        run: dotnet test desktop/tests/TeleSave.UI.Tests -c Release
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ui-snapshots-linux
+          path: desktop/tests/TeleSave.UI.Tests/snapshots
+
+  build:
+    name: Build ${{ matrix.arch }}
+    needs: [tdjson, test]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x64
+            runner: ubuntu-22.04
+          - arch: arm64
+            runner: ubuntu-22.04-arm
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - uses: actions/download-artifact@v4
+        with:
+          name: tdjson-linux-${{ matrix.arch }}
+          path: desktop/native/linux-${{ matrix.arch }}
+
+      - name: Version
+        id: version
+        run: |
+          tag="${{ github.event.release.tag_name }}"
+          if [ -n "$tag" ]; then v="${tag#v}"; else v=$(sed -n 's:.*<Version>\(.*\)</Version>.*:\1:p' desktop/Directory.Build.props); fi
+          echo "value=$v" >> "$GITHUB_OUTPUT"
+
+      - name: Smoke test (TDLib on Linux, real Telegram round-trip)
+        run: dotnet run --project desktop/src/TeleSave.Smoke -c Release -r linux-${{ matrix.arch }}
+
+      - name: Publish
+        env:
+          TG_API_ID: ${{ secrets.TG_API_ID }}
+          TG_API_HASH: ${{ secrets.TG_API_HASH }}
+          TG_CONFIG_URLS: ${{ secrets.TG_CONFIG_URLS }}
+          TG_CONFIG_PUBLIC_KEY: ${{ secrets.TG_CONFIG_PUBLIC_KEY }}
+        run: |
+          # Same obfuscation as the macOS build (TeleSaveCore.Obfuscator).
+          obf=""
+          if [ -n "$TG_API_HASH" ]; then
+            obf=$(python3 -c 'import sys,base64;k=b"TeleSave.obfuscation.v1";d=sys.argv[1].encode();print(base64.b64encode(bytes(b^k[i%len(k)] for i,b in enumerate(d))).decode())' "$TG_API_HASH")
+          fi
+          out=desktop/publish/linux-${{ matrix.arch }}
+          dotnet publish desktop/src/TeleSave.Linux -c Release -r linux-${{ matrix.arch }} --self-contained \
+            -p:Version=${{ steps.version.outputs.value }} -p:AppLocalIcu=70.1 \
+            -p:TG_API_ID="$TG_API_ID" -p:TG_API_HASH_OBF="$obf" \
+            -p:TG_CONFIG_URLS="$TG_CONFIG_URLS" -p:TG_CONFIG_PUBLIC_KEY="$TG_CONFIG_PUBLIC_KEY" \
+            -o "$out"
+          # Bundle Ubuntu 22.04's ICU 70 (app-local ICU) so localization works on every distribution.
+          libdir=/usr/lib/$(gcc -dumpmachine)
+          for lib in libicuuc libicui18n libicudata; do cp -L "$libdir/$lib.so.70" "$out/$lib.so.70"; cp -L "$libdir/$lib.so.70" "$out/$lib.so.70.1"; done
+
+      - name: Self-test of the published app
+        run: |
+          DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=0 desktop/publish/linux-${{ matrix.arch }}/telesave --self-test
+
+      - name: Packages (AppImage, .deb, .rpm, .tar.gz)
+        run: |
+          sudo apt-get install -y -q rpm
+          desktop/packaging/linux/package.sh ${{ matrix.arch }} ${{ steps.version.outputs.value }} desktop/publish/linux-${{ matrix.arch }} desktop/dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-release-${{ matrix.arch }}
+          path: desktop/dist
+
+      - name: Attach to GitHub release
+        if: github.event_name == 'release'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${{ github.event.release.tag_name }}" desktop/dist/* --clobber --repo ${{ github.repository }}

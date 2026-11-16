@@ -133,6 +133,8 @@ public sealed class LinuxPlatform : IShellPlatform
 
     private void InstallApplicationEntry()
     {
+        // Installed from a .deb/.rpm: the package already ships the menu entry and icon.
+        if (File.Exists("/usr/share/applications/telesave.desktop")) return;
         var icon = Path.Combine(DataHome, "icons", "hicolor", "256x256", "apps", "telesave.png");
         try
         {

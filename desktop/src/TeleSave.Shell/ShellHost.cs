@@ -30,6 +30,7 @@ public static class ShellHost
             createPlatform().Cleanup();
             return 0;
         }
+        if (args.Contains("--self-test")) return SelfTest();
         var pipeName = $"TeleSave-{Environment.UserName}";
         var paths = args.SkipWhile(a => a != "--send").Skip(1).Where(a => !a.StartsWith("--")).ToList();
 
@@ -47,6 +48,33 @@ public static class ShellHost
         ShellApp.PipeName = pipeName;
         return AppBuilder.Configure<ShellApp>().UsePlatformDetect().LogToTrace()
             .StartWithClassicDesktopLifetime(args, Avalonia.Controls.ShutdownMode.OnExplicitShutdown);
+    }
+
+    /// <summary>
+    /// Checks a published package without a display: TDLib loads, translations are found, and dates format in
+    /// Turkish (needs ICU). Used by CI on the real Windows and Linux builds.
+    /// </summary>
+    private static int SelfTest()
+    {
+        try
+        {
+            Console.WriteLine(TeleSave.TdLib.TdLibInfo.SelfCheck());
+            var languages = TeleSave.Core.L10n.Languages.Select(l => l.Code).ToList();
+            Console.WriteLine("languages: " + string.Join(",", languages));
+            if (languages.Count < 4) throw new InvalidOperationException("translations missing");
+            TeleSave.Core.L10n.SelectedCode = "tr";
+            // Mid-month, so the time zone cannot move it into another month.
+            var date = TeleSave.Core.Format.UploadDate(new DateTimeOffset(2026, 9, 15, 12, 0, 0, TimeSpan.Zero));
+            Console.WriteLine("tr date: " + date);
+            if (!date.Contains("Eyl")) throw new InvalidOperationException("culture data missing (ICU)");
+            Console.WriteLine("SELF-TEST PASSED");
+            return 0;
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine("SELF-TEST FAILED: " + e.Message);
+            return 1;
+        }
     }
 
     private static void Forward(string pipeName, List<string> paths)

@@ -67,14 +67,15 @@ public final class KeychainStore: @unchecked Sendable {
 public enum CredentialsResolver {
     public static let keychainAccount = "api-credentials"
 
-    /// Order: user-entered (only offered in builds without a bundled key) → remote config → bundled → environment.
+    /// Order: remote config (signed by the developer) → bundled key → user-entered key → environment.
+    /// A build with a bundled key never uses a key typed in by the user.
     public static func resolve(keychain: KeychainStore, remote: ApiCredentials? = nil, bundle: Bundle = .main, environment: [String: String] = ProcessInfo.processInfo.environment) -> ApiCredentials? {
+        if let remote, remote.isValid { return remote }
+        if let bundled = bundled(in: bundle) { return bundled }
         if let data = keychain.data(for: keychainAccount),
            let saved = try? JSONDecoder().decode(ApiCredentials.self, from: data), saved.isValid {
             return saved
         }
-        if let remote, remote.isValid { return remote }
-        if let bundled = bundled(in: bundle) { return bundled }
         if let idString = environment["TELESAVE_API_ID"], let id = Int(idString), let hash = environment["TELESAVE_API_HASH"] {
             let env = ApiCredentials(apiId: id, apiHash: hash)
             if env.isValid { return env }

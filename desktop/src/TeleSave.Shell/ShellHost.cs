@@ -30,7 +30,7 @@ public static class ShellHost
             createPlatform().Cleanup();
             return 0;
         }
-        if (args.Contains("--self-test")) return SelfTest();
+        if (args.Contains("--self-test")) return SelfTest(createPlatform());
         var pipeName = $"TeleSave-{Environment.UserName}";
         var paths = args.SkipWhile(a => a != "--send").Skip(1).Where(a => !a.StartsWith("--")).ToList();
 
@@ -54,11 +54,13 @@ public static class ShellHost
     /// Checks a published package without a display: TDLib loads, translations are found, and dates format in
     /// Turkish (needs ICU). Used by CI on the real Windows and Linux builds.
     /// </summary>
-    private static int SelfTest()
+    private static int SelfTest(IShellPlatform platform)
     {
         try
         {
             Console.WriteLine(TeleSave.TdLib.TdLibInfo.SelfCheck());
+            // Whether this build carries an API key (from the TG_API_ID / TG_API_HASH secrets); never prints the key.
+            Console.WriteLine("bundled api key: " + (platform.BundledCredentials?.IsValid == true ? "yes" : "no"));
             var languages = TeleSave.Core.L10n.Languages.Select(l => l.Code).ToList();
             Console.WriteLine("languages: " + string.Join(",", languages));
             if (languages.Count < 4) throw new InvalidOperationException("translations missing");

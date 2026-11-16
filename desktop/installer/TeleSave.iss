@@ -29,7 +29,8 @@ UninstallDisplayIcon={app}\TeleSave.exe
 Compression=lzma2/max
 SolidCompression=yes
 WizardStyle=modern
-MinVersion=10.0.19041
+; No MinVersion: Inno Setup's build-number check rejected current Windows 11 builds. .NET 10 itself
+; requires Windows 10 or later.
 #if Arch == "arm64"
 ArchitecturesAllowed=arm64
 ArchitecturesInstallIn64BitMode=arm64

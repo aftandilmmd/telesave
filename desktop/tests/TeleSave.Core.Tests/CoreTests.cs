@@ -360,3 +360,19 @@ public class RemoteConfigTests
         Assert.False(release.IsNewerThan("0.10.0"));
     }
 }
+
+public class CredentialOrderTests
+{
+    private const string A = "0123456789abcdef0123456789abcdef", B = "fedcba9876543210fedcba9876543210";
+
+    [Fact]
+    public void BundledKeyCannotBeOverriddenByTheUser()
+    {
+        var store = new InMemorySecretStore();
+        CredentialsResolver.Save(new ApiCredentials(111, A), store);
+        var bundled = new ApiCredentials(222, B);
+        Assert.Equal(222, CredentialsResolver.Resolve(store, null, bundled, new Dictionary<string, string?>())!.ApiId);
+        Assert.Equal(333, CredentialsResolver.Resolve(store, new ApiCredentials(333, A), bundled, new Dictionary<string, string?>())!.ApiId);
+        Assert.Equal(111, CredentialsResolver.Resolve(store, null, null, new Dictionary<string, string?>())!.ApiId);
+    }
+}

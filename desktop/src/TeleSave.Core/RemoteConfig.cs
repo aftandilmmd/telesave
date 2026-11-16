@@ -205,13 +205,18 @@ public static class Obfuscator
     private static byte[] Xor(byte[] bytes) => bytes.Select((b, i) => (byte)(b ^ Key[i % Key.Length])).ToArray();
 }
 
-/// <summary>api_id/api_hash: user-entered → remote config → bundled → environment.</summary>
 public static class CredentialsResolver
 {
     public const string SecretAccount = "api-credentials";
 
+    /// <summary>
+    /// Order: remote config (signed by the developer) → bundled key → user-entered key → environment.
+    /// A build with a bundled key never uses a key typed in by the user.
+    /// </summary>
     public static ApiCredentials? Resolve(ISecretStore store, ApiCredentials? remote, ApiCredentials? bundled, IDictionary<string, string?>? environment = null)
     {
+        if (remote?.IsValid == true) return remote;
+        if (bundled?.IsValid == true) return bundled;
         if (store.Read(SecretAccount) is { } data)
         {
             try
@@ -221,8 +226,6 @@ public static class CredentialsResolver
             }
             catch (JsonException) { }
         }
-        if (remote?.IsValid == true) return remote;
-        if (bundled?.IsValid == true) return bundled;
         environment ??= Environment.GetEnvironmentVariables().Cast<System.Collections.DictionaryEntry>()
             .ToDictionary(e => (string)e.Key, e => e.Value as string);
         if (environment.TryGetValue("TELESAVE_API_ID", out var idText) && int.TryParse(idText, out var id)

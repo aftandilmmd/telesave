@@ -158,7 +158,10 @@ jobs:
 
       - name: Self-test of the published app
         run: |
-          DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=0 desktop/publish/linux-${{ matrix.arch }}/telesave --self-test
+          DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=0 desktop/publish/linux-${{ matrix.arch }}/telesave --self-test | tee selftest.txt
+          if [ "${{ github.event_name }}" = "release" ] && ! grep -q "bundled api key: yes" selftest.txt; then
+            echo "release build has no bundled API key (TG_API_ID / TG_API_HASH secrets)"; exit 1
+          fi
 
       - name: Packages (AppImage, .deb, .rpm, .tar.gz)
         run: |

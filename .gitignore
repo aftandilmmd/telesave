@@ -1,0 +1,11 @@
+.build/
+build/
+dist/
+.swiftpm/
+Config/Secrets.env
+*.xcuserstate
+.DS_Store
+remote-config/*.json
+!remote-config/config.example.json
+.claude/
+.harness-mem/

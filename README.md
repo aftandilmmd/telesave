@@ -75,8 +75,8 @@ TeleSave cuts that down to one move: **drag the file up to your menu bar** and d
 
 ## Getting started
 
-1. **Download** TeleSave and drag it into your Applications folder.
-2. **Open it.** A paper plane appears in your menu bar.
+1. **Download** TeleSave for your system from the [latest release](https://github.com/aftandilmmd/telesave/releases/latest) and install it (see [Installing](#installing) below for the one-time security prompt).
+2. **Open it.** A paper plane appears in your menu bar (macOS) or notification area (Windows, Linux).
 3. **Sign in** by scanning the QR code with Telegram on your phone (*Settings › Devices › Link Desktop Device*), or with your phone number.
 4. **Drag a file** up to the menu bar and drop it on the shelf that appears. Look for it in Saved Messages.
 
@@ -98,19 +98,41 @@ Not by default: everything is sent as a document, in original quality. You can s
 TeleSave keeps the Mac awake while uploading. If the connection drops, uploads pause and continue automatically when it comes back, even after a restart.
 
 **Does it work on Windows or Linux?**
-Yes on Windows: TeleSave lives in the notification area and keeps a taskbar button. Drag a file onto the TeleSave button in the taskbar and the drop panel opens, or right-click files in File Explorer and choose *Send to TeleSave*. Linux is planned.
+Yes. On **Windows**, TeleSave lives in the notification area and keeps a taskbar button: drag a file onto the TeleSave button in the taskbar and the drop panel opens, or right-click files in File Explorer and choose *Send to TeleSave*. On **Linux** it lives in the system tray and adds *Send to TeleSave* to Nautilus, Dolphin, Nemo and Caja.
 
 ## Requirements
 
 - **macOS:** macOS 15 Sequoia or later, Apple Silicon or Intel
 - **Windows:** Windows 10 version 2004 or later / Windows 11, x64 or ARM64
+- **Linux:** a 64-bit distribution with glibc 2.35 or newer (Ubuntu 22.04+, Debian 12+, Fedora, openSUSE, Arch, …), x64 or ARM64
 - A Telegram account
 
-### Installing on Windows
+## Installing
 
-Download `TeleSave-<version>-windows-x64-setup.exe` (or `-arm64-` for ARM PCs) from the [latest release](https://github.com/aftandilmmd/telesave/releases/latest) and run it; no administrator rights are needed. A portable `.zip` is also available.
+All downloads are on the [latest release](https://github.com/aftandilmmd/telesave/releases/latest). TeleSave is not signed with paid Apple / Microsoft certificates yet, so each system asks you once to confirm that you want to open it.
 
-The installer is not code-signed yet, so Windows SmartScreen may say it *protected your PC*: click **More info › Run anyway**.
+### macOS
+
+1. Open `TeleSave-<version>.dmg` and drag **TeleSave** into **Applications**.
+2. Open TeleSave. macOS blocks it the first time with a message that it *could not verify* the app. Click **Done**.
+3. Open **System Settings › Privacy & Security** and scroll all the way down to the **Security** section. Next to *"TeleSave" was blocked…* click **Open Anyway**.
+4. Confirm with **Open Anyway** again and your password or Touch ID. From then on TeleSave opens normally.
+
+<sub>Prefer the Terminal? `xattr -dr com.apple.quarantine /Applications/TeleSave.app` does the same.</sub>
+
+### Windows
+
+Download `TeleSave-<version>-windows-x64-setup.exe` for Intel / AMD PCs, or `-windows-arm64-setup.exe` for ARM PCs (Snapdragon), and run it; no administrator rights are needed. A portable `.zip` is also available.
+
+If Windows SmartScreen says it *protected your PC*, click **More info › Run anyway**.
+
+### Linux
+
+- **Any distribution:** download the `.AppImage`, make it executable (`chmod +x TeleSave-*.AppImage`) and run it.
+- **Debian, Ubuntu, Mint:** `sudo apt install ./TeleSave-<version>-linux-x64.deb`
+- **Fedora, RHEL, openSUSE:** `sudo dnf install ./TeleSave-<version>-linux-x64.rpm` (or `zypper install`)
+
+Use the `-linux-arm64` files on ARM machines. On GNOME without a tray, install the *AppIndicator and KStatusNotifierItem Support* extension to see the tray icon.
 
 ## For developers
 

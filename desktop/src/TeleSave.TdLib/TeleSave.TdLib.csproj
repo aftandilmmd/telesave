@@ -6,8 +6,4 @@
   <ItemGroup>
     <ProjectReference Include="..\TeleSave.Core\TeleSave.Core.csproj" />
   </ItemGroup>
-  <!-- tdjson.dll (+ OpenSSL/zlib DLLs) or libtdjson.so, built by CI into desktop/native/<rid>/ -->
-  <ItemGroup Condition="'$(RuntimeIdentifier)' != '' And Exists('..\..\native\$(RuntimeIdentifier)')">
-    <None Include="..\..\native\$(RuntimeIdentifier)\*.dll;..\..\native\$(RuntimeIdentifier)\*.so" Link="%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
-  </ItemGroup>
 </Project>

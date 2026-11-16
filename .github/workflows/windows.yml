@@ -132,6 +132,17 @@ jobs:
           name: tdjson-win-${{ matrix.arch }}
           path: desktop/native/win-${{ matrix.arch }}
 
+      - name: Visual C++ runtime next to tdjson.dll
+        shell: pwsh
+        run: |
+          # tdjson.dll needs the MSVC runtime; ship it app-local (allowed by Microsoft) so PCs without the
+          # VC++ Redistributable work too.
+          foreach ($dll in "msvcp140.dll", "vcruntime140.dll", "vcruntime140_1.dll") {
+            $source = Join-Path $env:SystemRoot "System32\$dll"
+            if (Test-Path $source) { Copy-Item $source desktop/native/win-${{ matrix.arch }}/ }
+          }
+          Get-ChildItem desktop/native/win-${{ matrix.arch }} | ForEach-Object Name
+
       - name: Version
         id: version
         shell: pwsh
@@ -164,6 +175,9 @@ jobs:
             -p:TG_API_ID="$env:TG_API_ID" -p:TG_API_HASH_OBF="$obf" `
             -p:TG_CONFIG_URLS="$env:TG_CONFIG_URLS" -p:TG_CONFIG_PUBLIC_KEY="$env:TG_CONFIG_PUBLIC_KEY" `
             -o desktop/publish/win-${{ matrix.arch }}
+          foreach ($dll in "tdjson.dll", "msvcp140.dll", "vcruntime140.dll") {
+            if (!(Test-Path "desktop/publish/win-${{ matrix.arch }}/$dll")) { throw "$dll missing from publish output" }
+          }
 
       - name: Self-test of the published app
         shell: pwsh

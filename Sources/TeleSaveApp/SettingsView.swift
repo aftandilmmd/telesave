@@ -4,6 +4,7 @@ import TeleSaveCore
 struct SettingsView: View {
     @Bindable var model: AppModel
     var onClose: () -> Void
+    var onChangeKey: () -> Void
 
     @State private var launchAtLogin = LaunchAtLogin.isEnabled
     @State private var launchError: String?
@@ -78,7 +79,7 @@ struct SettingsView: View {
                         Button(L("Telegram oturumunu kapat"), role: .destructive, action: model.logOut)
                     }
                     if !model.hasBundledCredentials {
-                        Button(L("API anahtarını değiştir"), action: model.resetCredentials)
+                        Button(L("API anahtarını değiştir"), action: onChangeKey)
                     }
                 }
 

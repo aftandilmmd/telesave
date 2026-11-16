@@ -8,6 +8,7 @@ struct PopoverView: View {
     enum Page {
         case main
         case settings
+        case changeKey
         case destination
     }
 
@@ -17,8 +18,11 @@ struct PopoverView: View {
             case .needsCredentials:
                 CredentialsView(model: model)
             case .running:
-                if page == .settings {
-                    SettingsView(model: model, onClose: { page = .main })
+                if page == .changeKey {
+                    // Works logged in or not; the current connection keeps running meanwhile.
+                    CredentialsView(model: model, onClose: { page = .settings })
+                } else if page == .settings {
+                    SettingsView(model: model, onClose: { page = .main }, onChangeKey: { page = .changeKey })
                 } else if !model.canUpload {
                     LoginView(model: model, onSettings: { page = .settings })
                 } else if page == .destination {

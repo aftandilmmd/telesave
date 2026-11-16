@@ -796,27 +796,44 @@ final class AppModel {
 
     // MARK: - Credentials
 
-    func saveCredentials(apiId: String, apiHash: String) {
+    /// True while a new API key is being checked with Telegram.
+    private(set) var isValidatingKey = false
+
+    /// api_id currently in use (shown on the change-key page).
+    var currentApiId: Int? { activeCredentials?.apiId }
+
+    /// Checks the key with Telegram first; only a key Telegram accepts replaces the current one.
+    /// On failure nothing changes and the app keeps running with the old key.
+    @discardableResult
+    func saveCredentials(apiId: String, apiHash: String) async -> Bool {
         let credentials = ApiCredentials(apiId: Int(apiId.trimmingCharacters(in: .whitespaces)) ?? 0,
                                          apiHash: apiHash.trimmingCharacters(in: .whitespaces).lowercased())
         guard credentials.isValid else {
             authError = L("api_id bir sayı, api_hash 32 karakterlik bir hex dizesi olmalı.")
-            return
+            return false
+        }
+        authError = nil
+        if credentials == activeCredentials { return true }
+
+        isValidatingKey = true
+        let outcome = await ApiKeyValidator.validate(credentials)
+        isValidatingKey = false
+        switch outcome {
+        case .invalid:
+            authError = L("Bu anahtar Telegram tarafından reddedildi. api_id ve api_hash değerlerini kontrol edin.")
+            return false
+        case .failed(let reason):
+            authError = L("Anahtar doğrulanamadı: %@", reason)
+            return false
+        case .valid:
+            break
         }
         guard CredentialsResolver.save(credentials, keychain: keychain) else {
             authError = L("Anahtar Keychain'e kaydedilemedi.")
-            return
+            return false
         }
-        authError = nil
-        Task { await restart(with: credentials) }
-    }
-
-    func resetCredentials() {
-        keychain.delete(CredentialsResolver.keychainAccount)
-        Task {
-            await stopClient()
-            phase = .needsCredentials
-        }
+        await restart(with: credentials)
+        return true
     }
 }
 

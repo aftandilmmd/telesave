@@ -174,17 +174,34 @@ struct QRCodeImage: View {
     }
 }
 
+/// API key entry: first-run setup, or (with `onClose`) changing the key from Settings.
+/// The key is checked with Telegram before it is stored; the current one stays in use until then.
 struct CredentialsView: View {
     @Bindable var model: AppModel
+    /// Set when changing an existing key: "Vazgeç" and success both return to Settings.
+    var onClose: (() -> Void)?
     @State private var apiId = ""
     @State private var apiHash = ""
 
+    private var isChange: Bool { onClose != nil }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text(L("Telegram API anahtarı")).font(.title3.bold())
-            Text(L("TeleSave'in hesabınıza bağlanması için bir Telegram API anahtarı gerekiyor (tek seferlik):"))
-                .font(.callout)
-                .fixedSize(horizontal: false, vertical: true)
+            Text(isChange ? L("API anahtarını değiştir") : L("Telegram API anahtarı")).font(.title3.bold())
+            if isChange {
+                if let current = model.currentApiId {
+                    Text(L("Mevcut api_id: %@", String(current)))
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                }
+                Text(L("Yeni anahtar doğrulanana kadar mevcut anahtar kullanılmaya devam eder."))
+                    .font(.callout)
+                    .fixedSize(horizontal: false, vertical: true)
+            } else {
+                Text(L("TeleSave'in hesabınıza bağlanması için bir Telegram API anahtarı gerekiyor (tek seferlik):"))
+                    .font(.callout)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
             VStack(alignment: .leading, spacing: 4) {
                 Text(L("1. my.telegram.org adresinde telefonunuzla giriş yapın."))
                 Text(L("2. “API development tools” › yeni uygulama oluşturun."))
@@ -200,14 +217,32 @@ struct CredentialsView: View {
                 .textFieldStyle(.roundedBorder)
                 .font(.body.monospaced())
             if let error = model.authError {
-                Text(error).font(.caption).foregroundStyle(.red)
+                Text(error)
+                    .font(.caption)
+                    .foregroundStyle(.red)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             HStack {
-                Button(L("Çıkış")) { NSApp.terminate(nil) }
+                if let onClose {
+                    Button(L("Vazgeç")) {
+                        model.authError = nil
+                        onClose()
+                    }
+                } else {
+                    Button(L("Çıkış")) { NSApp.terminate(nil) }
+                }
                 Spacer()
-                Button(L("Kaydet ve devam et")) { model.saveCredentials(apiId: apiId, apiHash: apiHash) }
-                    .buttonStyle(.borderedProminent)
-                    .disabled(apiId.isEmpty || apiHash.isEmpty)
+                if model.isValidatingKey {
+                    ProgressView().controlSize(.small)
+                    Text(L("Doğrulanıyor…")).font(.caption).foregroundStyle(.secondary)
+                }
+                Button(L("Doğrula ve kaydet")) {
+                    Task {
+                        if await model.saveCredentials(apiId: apiId, apiHash: apiHash) { onClose?() }
+                    }
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(apiId.isEmpty || apiHash.isEmpty || model.isValidatingKey)
             }
             Spacer()
             Text(L("Anahtar yalnızca bu Mac'in Keychain'inde saklanır."))
@@ -215,5 +250,6 @@ struct CredentialsView: View {
                 .foregroundStyle(.secondary)
         }
         .padding(20)
+        .onAppear { model.authError = nil }
     }
 }

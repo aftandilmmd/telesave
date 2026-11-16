@@ -131,7 +131,6 @@
     "my.telegram.org'u aç": "my.telegram.org-u aç",
     "api_id (ör. 1234567)": "api_id (məs. 1234567)",
     "api_hash (32 karakter)": "api_hash (32 simvol)",
-    "Kaydet ve devam et": "Yadda saxla və davam et",
     "Anahtar yalnızca bu Mac'in Keychain'inde saklanır.": "Açar yalnız bu Mac-in Keychain-ində saxlanılır.",
     "Gönderim": "Göndərmə",
     "Fotoğraf/videoları medya olarak gönder": "Foto/videoları media kimi göndər",
@@ -180,6 +179,13 @@
     "Resim": "Şəkil",
     "Video": "Video",
     "Henüz eşleşme yok": "Hələ uyğunluq yoxdur",
-    "Aramaya devam et": "Axtarışa davam et"
+    "Aramaya devam et": "Axtarışa davam et",
+    "Doğrula ve kaydet": "Yoxla və yadda saxla",
+    "Doğrulanıyor…": "Yoxlanılır…",
+    "Yeni anahtar doğrulanana kadar mevcut anahtar kullanılmaya devam eder.": "Yeni açar təsdiqlənənə qədər mövcud açardan istifadə olunur.",
+    "Bu anahtar Telegram tarafından reddedildi. api_id ve api_hash değerlerini kontrol edin.": "Bu açar Telegram tərəfindən rədd edildi. api_id və api_hash dəyərlərini yoxlayın.",
+    "Anahtar doğrulanamadı: %@": "Açar yoxlanılmadı: %@",
+    "Mevcut api_id: %@": "Mövcud api_id: %@",
+    "Zaman aşımı": "Vaxt bitdi"
   }
 }

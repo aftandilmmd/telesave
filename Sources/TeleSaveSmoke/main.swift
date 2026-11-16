@@ -52,4 +52,14 @@ Task {
 _ = roundTrip.wait(timeout: .now() + 30)
 print("requestQRCode →", outcome)
 client.close()
+
+// The same check the app runs before replacing an API key.
+let validation = DispatchSemaphore(value: 0)
+nonisolated(unsafe) var validatorOutcome = ApiKeyValidator.Outcome.failed("not run")
+Task {
+    validatorOutcome = await ApiKeyValidator.validate(credentials)
+    validation.signal()
+}
+_ = validation.wait(timeout: .now() + 40)
+print("ApiKeyValidator →", validatorOutcome)
 exit(outcome == "timeout" ? 1 : 0)

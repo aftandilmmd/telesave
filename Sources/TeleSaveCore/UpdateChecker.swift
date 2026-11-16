@@ -6,12 +6,15 @@ public struct ReleaseInfo: Equatable, Sendable {
     public let version: String
     public let pageURL: URL
 
-    /// Parses the GitHub REST `releases/latest` response; drafts and pre-releases are ignored.
+    /// Parses the GitHub REST `releases/latest` response. Drafts, pre-releases and releases without a macOS
+    /// download (.dmg) are ignored, so a Windows-only release never prompts macOS users.
     public static func parse(_ data: Data) -> ReleaseInfo? {
         guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               let tag = json["tag_name"] as? String,
               let page = (json["html_url"] as? String).flatMap(URL.init(string:)),
               json["draft"] as? Bool != true, json["prerelease"] as? Bool != true else { return nil }
+        let assets = (json["assets"] as? [[String: Any]] ?? []).compactMap { $0["name"] as? String }
+        guard assets.contains(where: { $0.lowercased().hasSuffix(".dmg") }) else { return nil }
         let version = tag.hasPrefix("v") || tag.hasPrefix("V") ? String(tag.dropFirst()) : tag
         guard version.first?.isNumber == true else { return nil }
         return ReleaseInfo(version: version, pageURL: page)

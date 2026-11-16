@@ -186,6 +186,12 @@
     "Bu anahtar Telegram tarafından reddedildi. api_id ve api_hash değerlerini kontrol edin.": "Bu anahtar Telegram tarafından reddedildi. api_id ve api_hash değerlerini kontrol edin.",
     "Anahtar doğrulanamadı: %@": "Anahtar doğrulanamadı: %@",
     "Mevcut api_id: %@": "Mevcut api_id: %@",
-    "Zaman aşımı": "Zaman aşımı"
+    "Zaman aşımı": "Zaman aşımı",
+    "Dosya bulunamadı: %@": "Dosya bulunamadı: %@",
+    "Görev çubuğunda göster": "Görev çubuğunda göster",
+    "Dosyayı görev çubuğundaki TeleSave düğmesinin üstüne sürükleyince bırakma paneli açılır.": "Dosyayı görev çubuğundaki TeleSave düğmesinin üstüne sürükleyince bırakma paneli açılır.",
+    "Gezgin'de dosya ve klasörlere sağ tıklayınca görünür.": "Gezgin'de dosya ve klasörlere sağ tıklayınca görünür.",
+    "Ekran kenarında bırakma şeridi": "Ekran kenarında bırakma şeridi",
+    "Ekranın sağ kenarında ince bir şerit; üstüne dosya sürükleyince genişler.": "Ekranın sağ kenarında ince bir şerit; üstüne dosya sürükleyince genişler."
   }
 }

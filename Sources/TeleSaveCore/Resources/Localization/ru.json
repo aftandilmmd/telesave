@@ -186,6 +186,12 @@
     "Bu anahtar Telegram tarafından reddedildi. api_id ve api_hash değerlerini kontrol edin.": "Telegram отклонил этот ключ. Проверьте api_id и api_hash.",
     "Anahtar doğrulanamadı: %@": "Не удалось проверить ключ: %@",
     "Mevcut api_id: %@": "Текущий api_id: %@",
-    "Zaman aşımı": "Время ожидания истекло"
+    "Zaman aşımı": "Время ожидания истекло",
+    "Dosya bulunamadı: %@": "Файл не найден: %@",
+    "Görev çubuğunda göster": "Показывать на панели задач",
+    "Dosyayı görev çubuğundaki TeleSave düğmesinin üstüne sürükleyince bırakma paneli açılır.": "Перетащите файл на кнопку TeleSave на панели задач, чтобы открыть панель.",
+    "Gezgin'de dosya ve klasörlere sağ tıklayınca görünür.": "Появляется при щелчке правой кнопкой по файлам и папкам в Проводнике.",
+    "Ekran kenarında bırakma şeridi": "Полоса для файлов у края экрана",
+    "Ekranın sağ kenarında ince bir şerit; üstüne dosya sürükleyince genişler.": "Узкая полоса у правого края экрана; расширяется, когда на неё перетаскивают файл."
   }
 }

@@ -1,0 +1,6 @@
+bin/
+obj/
+publish/
+dist/
+native/
+tests/TeleSave.UI.Tests/snapshots/

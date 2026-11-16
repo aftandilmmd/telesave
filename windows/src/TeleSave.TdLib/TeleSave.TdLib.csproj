@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>TeleSave.TdLib</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\TeleSave.Core\TeleSave.Core.csproj" />
+  </ItemGroup>
+  <!-- tdjson.dll and its OpenSSL/zlib DLLs, built by CI into windows/native/<rid>/ -->
+  <ItemGroup Condition="'$(RuntimeIdentifier)' != '' And Exists('..\..\native\$(RuntimeIdentifier)')">
+    <None Include="..\..\native\$(RuntimeIdentifier)\*.dll" Link="%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

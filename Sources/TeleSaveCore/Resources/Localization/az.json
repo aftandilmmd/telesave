@@ -186,6 +186,12 @@
     "Bu anahtar Telegram tarafından reddedildi. api_id ve api_hash değerlerini kontrol edin.": "Bu açar Telegram tərəfindən rədd edildi. api_id və api_hash dəyərlərini yoxlayın.",
     "Anahtar doğrulanamadı: %@": "Açar yoxlanılmadı: %@",
     "Mevcut api_id: %@": "Mövcud api_id: %@",
-    "Zaman aşımı": "Vaxt bitdi"
+    "Zaman aşımı": "Vaxt bitdi",
+    "Dosya bulunamadı: %@": "Fayl tapılmadı: %@",
+    "Görev çubuğunda göster": "Tapşırıq panelində göstər",
+    "Dosyayı görev çubuğundaki TeleSave düğmesinin üstüne sürükleyince bırakma paneli açılır.": "Faylı tapşırıq panelindəki TeleSave düyməsinin üstünə sürükləyəndə buraxma paneli açılır.",
+    "Gezgin'de dosya ve klasörlere sağ tıklayınca görünür.": "Bələdçidə fayl və qovluqlara sağ klikləyəndə görünür.",
+    "Ekran kenarında bırakma şeridi": "Ekran kənarında buraxma zolağı",
+    "Ekranın sağ kenarında ince bir şerit; üstüne dosya sürükleyince genişler.": "Ekranın sağ kənarında nazik zolaq; üstünə fayl sürükləyəndə genişlənir."
   }
 }

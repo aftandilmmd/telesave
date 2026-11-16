@@ -5,12 +5,13 @@
 <h1 align="center">TeleSave</h1>
 
 <p align="center">
-  <strong>Drop a file on your menu bar. It lands in Telegram.</strong><br>
-  A tiny macOS menu bar app that uploads anything you drag onto it to your Telegram Saved Messages — or any chat, group or channel you choose.
+  <strong>Drop a file. It lands in Telegram.</strong><br>
+  A tiny menu bar / taskbar app for macOS and Windows that uploads anything you drag onto it to your Telegram Saved Messages — or any chat, group or channel you choose.
 </p>
 
 <p align="center">
-  <a href="../../releases/latest"><strong>Download for macOS</strong></a> · macOS 15 or later · Apple Silicon & Intel
+  <a href="https://github.com/aftandilmmd/telesave/releases/latest"><strong>Download for macOS</strong></a> · macOS 15 or later · Apple Silicon & Intel<br>
+  <a href="https://github.com/aftandilmmd/telesave/releases/latest"><strong>Download for Windows</strong></a> · Windows 10 (2004) or later · x64 & ARM64
 </p>
 
 ---
@@ -93,17 +94,25 @@ Not by default: everything is sent as a document, in original quality. You can s
 TeleSave keeps the Mac awake while uploading. If the connection drops, uploads pause and continue automatically when it comes back, even after a restart.
 
 **Does it work on Windows or Linux?**
-Not yet. TeleSave is macOS-only for now; Windows and Linux versions are planned.
+Yes on Windows: TeleSave lives in the notification area and keeps a taskbar button. Drag a file onto the TeleSave button in the taskbar and the drop panel opens, or right-click files in File Explorer and choose *Send to TeleSave*. Linux is planned.
 
 ## Requirements
 
-- macOS 15 Sequoia or later
-- Apple Silicon or Intel Mac
+- **macOS:** macOS 15 Sequoia or later, Apple Silicon or Intel
+- **Windows:** Windows 10 version 2004 or later / Windows 11, x64 or ARM64
 - A Telegram account
+
+### Installing on Windows
+
+Download `TeleSave-<version>-windows-x64-setup.exe` (or `-arm64-` for ARM PCs) from the [latest release](https://github.com/aftandilmmd/telesave/releases/latest) and run it; no administrator rights are needed. A portable `.zip` is also available.
+
+The installer is not code-signed yet, so Windows SmartScreen may say it *protected your PC*: click **More info › Run anyway**.
 
 ## For developers
 
 Build the macOS app with `scripts/build-app.sh` (output: `dist/TeleSave.app`) and package a DMG with `scripts/make-dmg.sh`. Run the tests with `swift test`, and `swift run TeleSaveSmoke` to check the TDLib integration against Telegram. An API key and the remote config can be bundled at build time through `Config/Secrets.env` (see `Config/Secrets.env.example`); remote config files are signed with `scripts/remote-config.swift`.
+
+The Windows app (.NET 10 + Avalonia) is described in [windows/README.md](windows/README.md).
 
 ---
 

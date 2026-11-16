@@ -1,0 +1,10 @@
+<Project>
+  <!--
+    Native TDLib (tdjson.dll + its DLLs on Windows, libtdjson.so on Linux) built by CI into native/<rid>/.
+    Copied into every executable built for that runtime (library projects don't get a RuntimeIdentifier).
+  -->
+  <ItemGroup Condition="('$(OutputType)' == 'Exe' Or '$(OutputType)' == 'WinExe') And '$(RuntimeIdentifier)' != '' And Exists('$(MSBuildThisFileDirectory)native\$(RuntimeIdentifier)')">
+    <None Include="$(MSBuildThisFileDirectory)native\$(RuntimeIdentifier)\*.dll;$(MSBuildThisFileDirectory)native\$(RuntimeIdentifier)\*.so"
+          Link="%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

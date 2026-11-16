@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>telesave</AssemblyName>
+    <RootNamespace>TeleSave.Linux</RootNamespace>
+    <RuntimeIdentifiers>linux-x64;linux-arm64</RuntimeIdentifiers>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\TeleSave.Shell\TeleSave.Shell.csproj" />
+  </ItemGroup>
+  <!-- Packages carry their own ICU (Ubuntu 22.04's ICU 70) so dates/numbers localize on any distribution. -->
+  <ItemGroup Condition="'$(AppLocalIcu)' != ''">
+    <RuntimeHostConfigurationOption Include="System.Globalization.AppLocalIcu" Value="$(AppLocalIcu)" />
+  </ItemGroup>
+  <!-- Optional build-time API key and remote config (CI passes them from secrets). -->
+  <ItemGroup>
+    <AssemblyMetadata Include="TSApiID" Value="$(TG_API_ID)" />
+    <AssemblyMetadata Include="TSApiHash" Value="$(TG_API_HASH_OBF)" />
+    <AssemblyMetadata Include="TSConfigURLs" Value="$(TG_CONFIG_URLS)" />
+    <AssemblyMetadata Include="TSConfigPublicKey" Value="$(TG_CONFIG_PUBLIC_KEY)" />
+  </ItemGroup>
+</Project>

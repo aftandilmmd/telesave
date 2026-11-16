@@ -7,12 +7,19 @@ final class UpdateCheckerTests: XCTestCase {
     func testParsesReleaseAndStripsV() throws {
         let release = try XCTUnwrap(ReleaseInfo.parse(json([
             "tag_name": "v0.2.0", "html_url": "https://github.com/aftandilmmd/telesave/releases/tag/v0.2.0",
-            "draft": false, "prerelease": false
+            "draft": false, "prerelease": false, "assets": [["name": "TeleSave-0.2.0.dmg"]]
         ])))
         XCTAssertEqual(release.version, "0.2.0")
         XCTAssertTrue(release.isNewer(than: "0.1.0"))
         XCTAssertFalse(release.isNewer(than: "0.2.0"))
         XCTAssertFalse(release.isNewer(than: "0.10.0"))
+    }
+
+    func testIgnoresReleasesWithoutMacDownload() {
+        XCTAssertNil(ReleaseInfo.parse(json([
+            "tag_name": "v0.3.1", "html_url": "https://x.y",
+            "assets": [["name": "TeleSave-0.3.1-windows-x64-setup.exe"], ["name": "TeleSave-0.3.1-windows-x64.zip"]]
+        ])), "a Windows-only fix must not prompt macOS users")
     }
 
     func testIgnoresDraftsPrereleasesAndJunk() {
@@ -36,7 +43,10 @@ final class UpdateCheckerTests: XCTestCase {
     func testRequestTargetsRepository() async {
         let ok: UpdateChecker.Fetch = { request in
             XCTAssertEqual(request.url?.absoluteString, "https://api.github.com/repos/aftandilmmd/telesave/releases/latest")
-            let body = try JSONSerialization.data(withJSONObject: ["tag_name": "0.3.0", "html_url": "https://github.com/aftandilmmd/telesave/releases/tag/0.3.0"])
+            let body = try JSONSerialization.data(withJSONObject: [
+                "tag_name": "0.3.0", "html_url": "https://github.com/aftandilmmd/telesave/releases/tag/0.3.0",
+                "assets": [["name": "TeleSave-0.3.0.dmg"], ["name": "TeleSave-0.3.0-windows-x64-setup.exe"]]
+            ] as [String: Any])
             return (body, HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)!)
         }
         let release = await UpdateChecker.latestRelease(fetch: ok)

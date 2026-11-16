@@ -1,0 +1,238 @@
+name: Windows
+
+on:
+  push:
+    branches: [main, desktop]
+    paths:
+      - "desktop/**"
+      - "Sources/TeleSaveCore/Resources/Localization/**"
+      - ".github/workflows/windows.yml"
+  pull_request:
+    paths:
+      - "desktop/**"
+  workflow_dispatch:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+# A push and its pull request build the same code: keep only the newest run per branch.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+env:
+  # Same TDLib as the macOS build (TDLibFramework 1.8.70-23383aef).
+  TDLIB_COMMIT: 23383aef218a3123f02b744bfa91bde21056a814
+  # Compiled TDLib is kept as assets of this pre-release, so builds on any branch or tag reuse it.
+  TDLIB_RELEASE: tdlib-1.8.70-23383ae
+  DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+
+jobs:
+  tdjson:
+    name: TDLib tdjson.dll (${{ matrix.arch }})
+    # Not for the TDLib pre-release itself, only for app releases (v…).
+    if: github.event_name != 'release' || startsWith(github.event.release.tag_name, 'v')
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x64
+            runner: windows-2022
+            cmake_arch: x64
+            triplet: x64-windows
+          - arch: arm64
+            runner: windows-11-arm
+            cmake_arch: ARM64
+            triplet: arm64-windows
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 300
+    env:
+      GH_TOKEN: ${{ github.token }}
+      ASSET: tdjson-win-${{ matrix.arch }}.zip
+    steps:
+      - name: Prebuilt TDLib
+        id: prebuilt
+        shell: pwsh
+        run: |
+          gh release download $env:TDLIB_RELEASE --repo $env:GITHUB_REPOSITORY --pattern $env:ASSET 2>$null
+          if ($LASTEXITCODE -eq 0 -and (Test-Path $env:ASSET)) {
+            Expand-Archive $env:ASSET -DestinationPath tdjson
+            "found=true" >> $env:GITHUB_OUTPUT
+          } else { "found=false" >> $env:GITHUB_OUTPUT }
+          exit 0
+
+      - name: Build TDLib (first time only, ~1 hour)
+        if: steps.prebuilt.outputs.found != 'true'
+        shell: pwsh
+        run: |
+          git clone https://github.com/tdlib/td.git td
+          git -C td checkout $env:TDLIB_COMMIT
+          git clone https://github.com/microsoft/vcpkg.git vcpkg
+          ./vcpkg/bootstrap-vcpkg.bat -disableMetrics
+          ./vcpkg/vcpkg.exe install "gperf:${{ matrix.triplet }}" "openssl:${{ matrix.triplet }}" "zlib:${{ matrix.triplet }}"
+          New-Item -ItemType Directory td/build | Out-Null
+          cd td/build
+          cmake -A ${{ matrix.cmake_arch }} `
+            -DCMAKE_TOOLCHAIN_FILE="$env:GITHUB_WORKSPACE/vcpkg/scripts/buildsystems/vcpkg.cmake" `
+            -DVCPKG_TARGET_TRIPLET=${{ matrix.triplet }} -DCMAKE_BUILD_TYPE=Release ..
+          cmake --build . --target tdjson --config Release --parallel 4
+          cd $env:GITHUB_WORKSPACE
+          New-Item -ItemType Directory tdjson | Out-Null
+          Copy-Item td/build/Release/tdjson.dll tdjson/
+          Copy-Item vcpkg/installed/${{ matrix.triplet }}/bin/*.dll tdjson/
+          Compress-Archive -Path tdjson/* -DestinationPath $env:ASSET
+          gh release view $env:TDLIB_RELEASE --repo $env:GITHUB_REPOSITORY 2>$null
+          if ($LASTEXITCODE -ne 0) {
+            gh release create $env:TDLIB_RELEASE --repo $env:GITHUB_REPOSITORY --prerelease --target main `
+              --title "TDLib 1.8.70 native libraries (CI build cache)" `
+              --notes "Compiled TDLib used by the Windows and Linux builds. Not an app release."
+          }
+          gh release upload $env:TDLIB_RELEASE $env:ASSET --repo $env:GITHUB_REPOSITORY --clobber
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tdjson-win-${{ matrix.arch }}
+          path: tdjson
+
+  test:
+    name: Tests (Core + UI)
+    if: github.event_name != 'release' || startsWith(github.event.release.tag_name, 'v')
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - name: Core tests
+        run: dotnet test desktop/tests/TeleSave.Core.Tests -c Release
+      - name: UI tests (renders panel snapshots)
+        run: dotnet test desktop/tests/TeleSave.UI.Tests -c Release
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ui-snapshots-windows
+          path: desktop/tests/TeleSave.UI.Tests/snapshots
+
+  build:
+    name: Build ${{ matrix.arch }}
+    needs: [tdjson, test]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x64
+            runner: windows-2022
+          - arch: arm64
+            runner: windows-11-arm
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - uses: actions/download-artifact@v4
+        with:
+          name: tdjson-win-${{ matrix.arch }}
+          path: desktop/native/win-${{ matrix.arch }}
+
+      - name: Visual C++ runtime next to tdjson.dll
+        shell: pwsh
+        run: |
+          # tdjson.dll needs the MSVC runtime; ship it app-local (allowed by Microsoft) so PCs without the
+          # VC++ Redistributable work too.
+          foreach ($dll in "msvcp140.dll", "vcruntime140.dll", "vcruntime140_1.dll") {
+            $source = Join-Path $env:SystemRoot "System32\$dll"
+            if (Test-Path $source) { Copy-Item $source desktop/native/win-${{ matrix.arch }}/ }
+          }
+          Get-ChildItem desktop/native/win-${{ matrix.arch }} | ForEach-Object Name
+
+      - name: Version
+        id: version
+        shell: pwsh
+        run: |
+          $tag = "${{ github.event.release.tag_name }}"
+          if ($tag) { $v = $tag.TrimStart('v') } else { $v = ([xml](Get-Content desktop/Directory.Build.props)).Project.PropertyGroup.Version }
+          "value=$v" >> $env:GITHUB_OUTPUT
+
+      - name: Smoke test (TDLib on Windows, real Telegram round-trip)
+        run: dotnet run --project desktop/src/TeleSave.Smoke -c Release -r win-${{ matrix.arch }}
+
+      - name: Publish
+        shell: pwsh
+        env:
+          TG_API_ID: ${{ secrets.TG_API_ID }}
+          TG_API_HASH: ${{ secrets.TG_API_HASH }}
+          TG_CONFIG_URLS: ${{ secrets.TG_CONFIG_URLS }}
+          TG_CONFIG_PUBLIC_KEY: ${{ secrets.TG_CONFIG_PUBLIC_KEY }}
+        run: |
+          # Same obfuscation as the macOS build (TeleSaveCore.Obfuscator).
+          $obf = ""
+          if ($env:TG_API_HASH) {
+            $key = [Text.Encoding]::UTF8.GetBytes("TeleSave.obfuscation.v1")
+            $data = [Text.Encoding]::UTF8.GetBytes($env:TG_API_HASH)
+            $out = for ($i = 0; $i -lt $data.Length; $i++) { $data[$i] -bxor $key[$i % $key.Length] }
+            $obf = [Convert]::ToBase64String([byte[]]$out)
+          }
+          dotnet publish desktop/src/TeleSave.Windows -c Release -r win-${{ matrix.arch }} --self-contained `
+            -p:Version=${{ steps.version.outputs.value }} `
+            -p:TG_API_ID="$env:TG_API_ID" -p:TG_API_HASH_OBF="$obf" `
+            -p:TG_CONFIG_URLS="$env:TG_CONFIG_URLS" -p:TG_CONFIG_PUBLIC_KEY="$env:TG_CONFIG_PUBLIC_KEY" `
+            -o desktop/publish/win-${{ matrix.arch }}
+          foreach ($dll in "tdjson.dll", "msvcp140.dll", "vcruntime140.dll") {
+            if (!(Test-Path "desktop/publish/win-${{ matrix.arch }}/$dll")) { throw "$dll missing from publish output" }
+          }
+
+      - name: Self-test of the published app
+        shell: pwsh
+        run: |
+          $p = Start-Process desktop/publish/win-${{ matrix.arch }}/TeleSave.exe -ArgumentList "--self-test" -Wait -PassThru -NoNewWindow -RedirectStandardOutput selftest.txt
+          Get-Content selftest.txt
+          if ($p.ExitCode -ne 0) { throw "self-test failed" }
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: publish-win-${{ matrix.arch }}
+          path: desktop/publish/win-${{ matrix.arch }}
+
+  package:
+    name: Installers
+    needs: build
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: publish-win-*
+          path: desktop/publish
+      - name: Version
+        id: version
+        shell: pwsh
+        run: |
+          $tag = "${{ github.event.release.tag_name }}"
+          if ($tag) { $v = $tag.TrimStart('v') } else { $v = ([xml](Get-Content desktop/Directory.Build.props)).Project.PropertyGroup.Version }
+          "value=$v" >> $env:GITHUB_OUTPUT
+      - name: Inno Setup and zip
+        shell: pwsh
+        run: |
+          if (!(Get-Command iscc -ErrorAction SilentlyContinue)) { choco install innosetup -y --no-progress | Out-Null }
+          $iscc = (Get-Command iscc -ErrorAction SilentlyContinue).Source
+          if (!$iscc) { $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" }
+          New-Item -ItemType Directory -Force desktop/dist | Out-Null
+          foreach ($arch in "x64", "arm64") {
+            Move-Item "desktop/publish/publish-win-$arch" "desktop/publish/win-$arch" -Force
+            & $iscc /Q "/DAppVersion=${{ steps.version.outputs.value }}" "/DArch=$arch" "/DSourceDir=..\publish\win-$arch" desktop/installer/TeleSave.iss
+            if ($LASTEXITCODE -ne 0) { throw "ISCC failed for $arch" }
+            Compress-Archive -Path "desktop/publish/win-$arch/*" -DestinationPath "desktop/dist/TeleSave-${{ steps.version.outputs.value }}-windows-$arch.zip"
+          }
+          Get-ChildItem desktop/dist | ForEach-Object { "{0}  {1:N1} MB" -f $_.Name, ($_.Length / 1MB) }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-release
+          path: desktop/dist
+      - name: Attach to GitHub release
+        if: github.event_name == 'release'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${{ github.event.release.tag_name }}" desktop/dist/* --clobber --repo ${{ github.repository }}

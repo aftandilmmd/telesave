@@ -186,6 +186,12 @@
     "Bu anahtar Telegram tarafından reddedildi. api_id ve api_hash değerlerini kontrol edin.": "Telegram rejected this key. Check the api_id and api_hash.",
     "Anahtar doğrulanamadı: %@": "Couldn't verify the key: %@",
     "Mevcut api_id: %@": "Current api_id: %@",
-    "Zaman aşımı": "Timed out"
+    "Zaman aşımı": "Timed out",
+    "Dosya bulunamadı: %@": "File not found: %@",
+    "Görev çubuğunda göster": "Show in taskbar",
+    "Dosyayı görev çubuğundaki TeleSave düğmesinin üstüne sürükleyince bırakma paneli açılır.": "Drag a file onto the TeleSave button in the taskbar to open the drop panel.",
+    "Gezgin'de dosya ve klasörlere sağ tıklayınca görünür.": "Appears when you right-click files and folders in File Explorer.",
+    "Ekran kenarında bırakma şeridi": "Drop strip at the screen edge",
+    "Ekranın sağ kenarında ince bir şerit; üstüne dosya sürükleyince genişler.": "A thin strip at the right edge of the screen that widens when you drag a file onto it."
   }
 }

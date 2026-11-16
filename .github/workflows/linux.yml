@@ -2,7 +2,7 @@ name: Linux
 
 on:
   push:
-    branches: [main, linux]
+    branches: [main, desktop]
     paths:
       - "desktop/**"
       - "Sources/TeleSaveCore/Resources/Localization/**"

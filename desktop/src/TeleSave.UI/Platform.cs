@@ -3,7 +3,7 @@ using TeleSave.Core;
 
 namespace TeleSave.UI;
 
-/// <summary>Everything the UI needs from the operating system. Windows implements it in TeleSave.App.</summary>
+/// <summary>Everything the UI needs from the operating system. Implemented per OS in TeleSave.Windows and TeleSave.Linux.</summary>
 public interface IPlatform
 {
     /// <summary>Per-user data folder (TDLib database, queue, settings).</summary>

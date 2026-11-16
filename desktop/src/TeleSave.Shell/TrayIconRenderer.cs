@@ -4,7 +4,7 @@ using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using TeleSave.UI;
 
-namespace TeleSave.App;
+namespace TeleSave.Shell;
 
 /// <summary>Draws the tray icon: paper plane on a blue tile, with a badge for progress or errors.</summary>
 internal static class TrayIconRenderer

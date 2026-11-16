@@ -1,4 +1,3 @@
-using System.Runtime.InteropServices;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -7,7 +6,7 @@ using TeleSave.Core;
 using TeleSave.UI;
 using TeleSave.UI.Views;
 
-namespace TeleSave.App;
+namespace TeleSave.Shell;
 
 /// <summary>
 /// The drop panel. Opens next to the tray icon (or wherever the taskbar is). With "Show in taskbar" it
@@ -17,13 +16,15 @@ namespace TeleSave.App;
 public sealed class PanelWindow : Window
 {
     private readonly AppModel _model;
+    private readonly IShellPlatform _platform;
     private readonly PanelView _view;
     private bool _taskbarMode = true;
     private bool _positioned;
 
-    public PanelWindow(AppModel model)
+    public PanelWindow(AppModel model, IShellPlatform platform)
     {
         _model = model;
+        _platform = platform;
         _view = new PanelView(model);
         Content = _view;
         Title = "TeleSave";
@@ -64,7 +65,7 @@ public sealed class PanelWindow : Window
         };
     }
 
-    private static Stream AssetLoader() => Avalonia.Platform.AssetLoader.Open(new Uri("avares://TeleSave/TeleSave.ico"));
+    private static Stream AssetLoader() => Avalonia.Platform.AssetLoader.Open(new Uri("avares://TeleSave.Shell/icon.png"));
 
     public void ApplyTaskbarMode(bool taskbar)
     {
@@ -113,21 +114,16 @@ public sealed class PanelWindow : Window
         _model.HandleDrop(files.Select(f => f.TryGetLocalPath()).OfType<string>().ToList());
     }
 
-    [StructLayout(LayoutKind.Sequential)]
-    private struct Point { public int X, Y; }
-
-    [DllImport("user32.dll")]
-    private static extern bool GetCursorPos(out Point point);
-
     /// <summary>
-    /// Places the panel in the corner of the working area nearest to the cursor (the tray icon was just
-    /// clicked, so the cursor is on the taskbar), on the screen the cursor is on.
+    /// Places the panel next to the panel/taskbar on the screen the pointer is on: near the pointer when
+    /// the OS tells us where it is (the tray icon was just clicked), otherwise in the corner by the clock.
     /// </summary>
     private void PositionNearTray()
     {
-        GetCursorPos(out var cursor);
-        var screen = Screens.ScreenFromPoint(new PixelPoint(cursor.X, cursor.Y)) ?? Screens.Primary;
+        var pointer = _platform.PointerPosition;
+        var screen = (pointer is { } p ? Screens.ScreenFromPoint(p) : null) ?? Screens.Primary;
         if (screen is null) return;
+        var cursor = pointer ?? new PixelPoint(screen.WorkingArea.Right, screen.WorkingArea.Bottom);
         var area = screen.WorkingArea;
         var scale = screen.Scaling;
         var width = (int)(Width * scale);

@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Desktop shell shared by Windows and Linux: tray, panel window, drop strip, single instance. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>TeleSave.Shell</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Avalonia.Desktop" Version="11.3.23" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\TeleSave.UI\TeleSave.UI.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <AvaloniaResource Include="icon.png" />
+  </ItemGroup>
+</Project>

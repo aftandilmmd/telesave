@@ -4,12 +4,12 @@ on:
   push:
     branches: [main, windows]
     paths:
-      - "windows/**"
+      - "desktop/**"
       - "Sources/TeleSaveCore/Resources/Localization/**"
       - ".github/workflows/windows.yml"
   pull_request:
     paths:
-      - "windows/**"
+      - "desktop/**"
   workflow_dispatch:
   release:
     types: [published]
@@ -92,14 +92,14 @@ jobs:
         with:
           dotnet-version: 10.0.x
       - name: Core tests
-        run: dotnet test windows/tests/TeleSave.Core.Tests -c Release
+        run: dotnet test desktop/tests/TeleSave.Core.Tests -c Release
       - name: UI tests (renders panel snapshots)
-        run: dotnet test windows/tests/TeleSave.UI.Tests -c Release
+        run: dotnet test desktop/tests/TeleSave.UI.Tests -c Release
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: ui-snapshots-windows
-          path: windows/tests/TeleSave.UI.Tests/snapshots
+          path: desktop/tests/TeleSave.UI.Tests/snapshots
 
   build:
     name: Build ${{ matrix.arch }}
@@ -121,18 +121,18 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: tdjson-win-${{ matrix.arch }}
-          path: windows/native/win-${{ matrix.arch }}
+          path: desktop/native/win-${{ matrix.arch }}
 
       - name: Version
         id: version
         shell: pwsh
         run: |
           $tag = "${{ github.event.release.tag_name }}"
-          if ($tag) { $v = $tag.TrimStart('v') } else { $v = ([xml](Get-Content windows/Directory.Build.props)).Project.PropertyGroup.Version }
+          if ($tag) { $v = $tag.TrimStart('v') } else { $v = ([xml](Get-Content desktop/Directory.Build.props)).Project.PropertyGroup.Version }
           "value=$v" >> $env:GITHUB_OUTPUT
 
       - name: Smoke test (TDLib on Windows, real Telegram round-trip)
-        run: dotnet run --project windows/src/TeleSave.Smoke -c Release -r win-${{ matrix.arch }}
+        run: dotnet run --project desktop/src/TeleSave.Smoke -c Release -r win-${{ matrix.arch }}
 
       - name: Publish
         shell: pwsh
@@ -150,18 +150,18 @@ jobs:
             $out = for ($i = 0; $i -lt $data.Length; $i++) { $data[$i] -bxor $key[$i % $key.Length] }
             $obf = [Convert]::ToBase64String([byte[]]$out)
           }
-          dotnet publish windows/src/TeleSave.App -c Release -r win-${{ matrix.arch }} --self-contained `
+          dotnet publish desktop/src/TeleSave.Windows -c Release -r win-${{ matrix.arch }} --self-contained `
             -p:Version=${{ steps.version.outputs.value }} `
             -p:TG_API_ID="$env:TG_API_ID" -p:TG_API_HASH_OBF="$obf" `
             -p:TG_CONFIG_URLS="$env:TG_CONFIG_URLS" -p:TG_CONFIG_PUBLIC_KEY="$env:TG_CONFIG_PUBLIC_KEY" `
-            -o windows/publish/win-${{ matrix.arch }}
-          if (!(Test-Path windows/publish/win-${{ matrix.arch }}/tdjson.dll)) { throw "tdjson.dll missing from publish output" }
-          if (!(Test-Path windows/publish/win-${{ matrix.arch }}/Localization/tr.json)) { throw "translations missing from publish output" }
+            -o desktop/publish/win-${{ matrix.arch }}
+          if (!(Test-Path desktop/publish/win-${{ matrix.arch }}/tdjson.dll)) { throw "tdjson.dll missing from publish output" }
+          if (!(Test-Path desktop/publish/win-${{ matrix.arch }}/Localization/tr.json)) { throw "translations missing from publish output" }
 
       - uses: actions/upload-artifact@v4
         with:
           name: publish-win-${{ matrix.arch }}
-          path: windows/publish/win-${{ matrix.arch }}
+          path: desktop/publish/win-${{ matrix.arch }}
 
   package:
     name: Installers
@@ -172,13 +172,13 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           pattern: publish-win-*
-          path: windows/publish
+          path: desktop/publish
       - name: Version
         id: version
         shell: pwsh
         run: |
           $tag = "${{ github.event.release.tag_name }}"
-          if ($tag) { $v = $tag.TrimStart('v') } else { $v = ([xml](Get-Content windows/Directory.Build.props)).Project.PropertyGroup.Version }
+          if ($tag) { $v = $tag.TrimStart('v') } else { $v = ([xml](Get-Content desktop/Directory.Build.props)).Project.PropertyGroup.Version }
           "value=$v" >> $env:GITHUB_OUTPUT
       - name: Inno Setup
         shell: pwsh
@@ -186,20 +186,20 @@ jobs:
           if (!(Get-Command iscc -ErrorAction SilentlyContinue)) { choco install innosetup -y --no-progress | Out-Null }
           $iscc = (Get-Command iscc -ErrorAction SilentlyContinue).Source
           if (!$iscc) { $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" }
-          New-Item -ItemType Directory -Force windows/dist | Out-Null
+          New-Item -ItemType Directory -Force desktop/dist | Out-Null
           foreach ($arch in "x64", "arm64") {
-            Move-Item "windows/publish/publish-win-$arch" "windows/publish/win-$arch" -Force
-            & $iscc /Q "/DAppVersion=${{ steps.version.outputs.value }}" "/DArch=$arch" "/DSourceDir=..\publish\win-$arch" windows/installer/TeleSave.iss
+            Move-Item "desktop/publish/publish-win-$arch" "desktop/publish/win-$arch" -Force
+            & $iscc /Q "/DAppVersion=${{ steps.version.outputs.value }}" "/DArch=$arch" "/DSourceDir=..\publish\win-$arch" desktop/installer/TeleSave.iss
             if ($LASTEXITCODE -ne 0) { throw "ISCC failed for $arch" }
-            Compress-Archive -Path "windows/publish/win-$arch/*" -DestinationPath "windows/dist/TeleSave-${{ steps.version.outputs.value }}-windows-$arch.zip"
+            Compress-Archive -Path "desktop/publish/win-$arch/*" -DestinationPath "desktop/dist/TeleSave-${{ steps.version.outputs.value }}-windows-$arch.zip"
           }
-          Get-ChildItem windows/dist | ForEach-Object { "{0}  {1:N1} MB" -f $_.Name, ($_.Length / 1MB) }
+          Get-ChildItem desktop/dist | ForEach-Object { "{0}  {1:N1} MB" -f $_.Name, ($_.Length / 1MB) }
       - uses: actions/upload-artifact@v4
         with:
           name: windows-release
-          path: windows/dist
+          path: desktop/dist
       - name: Attach to GitHub release
         if: github.event_name == 'release'
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "${{ github.event.release.tag_name }}" windows/dist/* --clobber --repo ${{ github.repository }}
+        run: gh release upload "${{ github.event.release.tag_name }}" desktop/dist/* --clobber --repo ${{ github.repository }}

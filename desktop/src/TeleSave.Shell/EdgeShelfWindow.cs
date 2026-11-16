@@ -7,7 +7,7 @@ using Avalonia.Platform.Storage;
 using TeleSave.Core;
 using TeleSave.UI;
 
-namespace TeleSave.App;
+namespace TeleSave.Shell;
 
 /// <summary>
 /// Optional thin strip at the right screen edge that widens into a drop target when a file is dragged over

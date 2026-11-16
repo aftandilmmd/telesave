@@ -8,12 +8,13 @@ using Avalonia.Media.Imaging;
 using Microsoft.Toolkit.Uwp.Notifications;
 using Microsoft.Win32;
 using TeleSave.Core;
+using TeleSave.Shell;
 using TeleSave.UI;
 
-namespace TeleSave.App.Platform;
+namespace TeleSave.Windows.Platform;
 
 /// <summary>Windows implementation of everything the UI needs from the OS.</summary>
-public sealed class WindowsPlatform : IPlatform
+public sealed class WindowsPlatform : IShellPlatform
 {
     public string DataDirectory { get; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "TeleSave");
     public string DownloadsDirectory => KnownFolders.Downloads ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
@@ -23,6 +24,14 @@ public sealed class WindowsPlatform : IPlatform
     public string ExecutablePath { get; } = Environment.ProcessPath ?? Path.Combine(AppContext.BaseDirectory, "TeleSave.exe");
 
     public WindowsPlatform() => Secrets = new DpapiSecretStore(Path.Combine(DataDirectory, "secrets"));
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct CursorPoint { public int X, Y; }
+
+    [DllImport("user32.dll")]
+    private static extern bool GetCursorPos(out CursorPoint point);
+
+    public Avalonia.PixelPoint? PointerPosition => GetCursorPos(out var p) ? new Avalonia.PixelPoint(p.X, p.Y) : null;
 
     // MARK: Build-time metadata
 

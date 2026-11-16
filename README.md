@@ -112,7 +112,7 @@ The installer is not code-signed yet, so Windows SmartScreen may say it *protect
 
 Build the macOS app with `scripts/build-app.sh` (output: `dist/TeleSave.app`) and package a DMG with `scripts/make-dmg.sh`. Run the tests with `swift test`, and `swift run TeleSaveSmoke` to check the TDLib integration against Telegram. An API key and the remote config can be bundled at build time through `Config/Secrets.env` (see `Config/Secrets.env.example`); remote config files are signed with `scripts/remote-config.swift`.
 
-The Windows app (.NET 10 + Avalonia) is described in [windows/README.md](windows/README.md).
+The Windows and Linux apps (.NET 10 + Avalonia) are described in [desktop/README.md](desktop/README.md).
 
 ---
 

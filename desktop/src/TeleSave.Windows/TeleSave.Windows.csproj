@@ -7,22 +7,18 @@
     <!-- Clipboard images and associated file icons. -->
     <UseWindowsForms>true</UseWindowsForms>
     <AssemblyName>TeleSave</AssemblyName>
-    <RootNamespace>TeleSave.App</RootNamespace>
+    <RootNamespace>TeleSave.Windows</RootNamespace>
     <ApplicationIcon>TeleSave.ico</ApplicationIcon>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <RuntimeIdentifiers>win-x64;win-arm64</RuntimeIdentifiers>
     <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Avalonia.Desktop" Version="11.3.23" />
     <PackageReference Include="Microsoft.Toolkit.Uwp.Notifications" Version="7.1.3" />
     <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="11.0.0" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\TeleSave.UI\TeleSave.UI.csproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <AvaloniaResource Include="TeleSave.ico" />
+    <ProjectReference Include="..\TeleSave.Shell\TeleSave.Shell.csproj" />
   </ItemGroup>
   <ItemGroup>
     <!-- WinForms is only used fully qualified (clipboard, icons); its names clash with Avalonia's. -->

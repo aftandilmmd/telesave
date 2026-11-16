@@ -8,14 +8,14 @@ using Avalonia.Media;
 using Avalonia.Styling;
 using Avalonia.Themes.Fluent;
 using Avalonia.Threading;
-using TeleSave.App.Platform;
 using TeleSave.Core;
 using TeleSave.UI;
 
-namespace TeleSave.App;
+namespace TeleSave.Shell;
 
-public sealed class App : Application
+public sealed class ShellApp : Application
 {
+    public static Func<IShellPlatform> CreatePlatform { get; set; } = () => throw new InvalidOperationException("No platform");
     public static IReadOnlyList<string> InitialPaths { get; set; } = [];
     public static bool LaunchedAtLogin { get; set; }
     public static string PipeName { get; set; } = "TeleSave";
@@ -37,9 +37,9 @@ public sealed class App : Application
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            var platform = new WindowsPlatform();
+            var platform = CreatePlatform();
             _model = new AppModel(platform, action => Dispatcher.UIThread.Post(action));
-            _panel = new PanelWindow(_model);
+            _panel = new PanelWindow(_model, platform);
             _model.PanelRequested += () => _panel.ShowPanel();
             _model.PropertyChanged += (_, e) =>
             {

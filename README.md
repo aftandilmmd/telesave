@@ -14,6 +14,10 @@
   <a href="https://github.com/aftandilmmd/telesave/releases/latest"><strong>Download for Windows</strong></a> · Windows 10 (2004) or later · x64 & ARM64
 </p>
 
+<p align="center">
+  <img src="docs/screenshot-windows.png" width="360" alt="TeleSave panel on Windows: drop area, search and the files in Saved Messages">
+</p>
+
 ---
 
 ## Why TeleSave?

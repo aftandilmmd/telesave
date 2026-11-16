@@ -38,12 +38,12 @@ public sealed class PanelWindow : Window
         WindowStartupLocation = WindowStartupLocation.Manual;
 
         DragDrop.SetAllowDrop(this, true);
-        AddHandler(DragDrop.DragOverEvent, (_, e) => e.DragEffects = e.Data.Contains(DataFormats.Files) ? DragDropEffects.Copy : DragDropEffects.None);
+        AddHandler(DragDrop.DragOverEvent, (_, e) => e.DragEffects = DroppedFiles.Effect(e));
         AddHandler(DragDrop.DropEvent, (_, e) =>
         {
+            // The drop zone handles its own drops; anywhere else on the panel counts too.
             if (e.Handled) return;
-            var paths = e.Data.GetFiles()?.Select(f => f.TryGetLocalPath()).OfType<string>().ToList() ?? [];
-            _model.HandleDrop(paths);
+            _model.HandleDrop(DroppedFiles.Paths(e));
             e.Handled = true;
         });
         KeyDown += (_, e) =>

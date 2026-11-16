@@ -6,6 +6,7 @@ using Avalonia.Media;
 using Avalonia.Platform.Storage;
 using TeleSave.Core;
 using TeleSave.UI;
+using TeleSave.UI.Views;
 
 namespace TeleSave.Shell;
 
@@ -44,15 +45,15 @@ public sealed class EdgeShelfWindow : Window
         DragDrop.SetAllowDrop(this, true);
         AddHandler(DragDrop.DragEnterEvent, (_, e) =>
         {
-            e.DragEffects = e.Data.Contains(DataFormats.Files) ? DragDropEffects.Copy : DragDropEffects.None;
+            e.DragEffects = DroppedFiles.Effect(e);
             Expand(true);
         });
-        AddHandler(DragDrop.DragOverEvent, (_, e) => e.DragEffects = e.Data.Contains(DataFormats.Files) ? DragDropEffects.Copy : DragDropEffects.None);
+        AddHandler(DragDrop.DragOverEvent, (_, e) => e.DragEffects = DroppedFiles.Effect(e));
         AddHandler(DragDrop.DragLeaveEvent, (_, _) => Expand(false));
         AddHandler(DragDrop.DropEvent, (_, e) =>
         {
             Expand(false);
-            _model.HandleDrop(e.Data.GetFiles()?.Select(f => f.TryGetLocalPath()).OfType<string>().ToList() ?? [], fromShell: true);
+            _model.HandleDrop(DroppedFiles.Paths(e), fromShell: true);
         });
         Opened += (_, _) => Place();
     }

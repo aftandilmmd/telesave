@@ -276,19 +276,17 @@ public sealed class DropZone : Border
         SetTargeted(false);
 
         DragDrop.SetAllowDrop(this, true);
-        AddHandler(DragDrop.DragEnterEvent, (_, e) => { e.DragEffects = e.Data.Contains(DataFormats.Files) ? DragDropEffects.Copy : DragDropEffects.None; SetTargeted(true); });
-        AddHandler(DragDrop.DragOverEvent, (_, e) => e.DragEffects = e.Data.Contains(DataFormats.Files) ? DragDropEffects.Copy : DragDropEffects.None);
+        AddHandler(DragDrop.DragEnterEvent, (_, e) => { e.DragEffects = DroppedFiles.Effect(e); SetTargeted(true); });
+        AddHandler(DragDrop.DragOverEvent, (_, e) => e.DragEffects = DroppedFiles.Effect(e));
         AddHandler(DragDrop.DragLeaveEvent, (_, _) => SetTargeted(false));
         AddHandler(DragDrop.DropEvent, (_, e) =>
         {
             SetTargeted(false);
-            model.HandleDrop(Paths(e.Data));
+            model.HandleDrop(DroppedFiles.Paths(e));
+            e.Handled = true;
         });
         PointerPressed += async (_, _) => await PickFilesAsync();
     }
-
-    internal static List<string> Paths(IDataObject data) =>
-        data.GetFiles()?.Select(f => f.TryGetLocalPath()).OfType<string>().ToList() ?? [];
 
     private void SetTargeted(bool targeted)
     {
@@ -307,6 +305,16 @@ public sealed class DropZone : Border
         });
         _model.HandleDrop(files.Select(f => f.TryGetLocalPath()).OfType<string>().ToList());
     }
+}
+
+/// <summary>Local paths of files being dragged (Avalonia's DataTransfer API).</summary>
+public static class DroppedFiles
+{
+    public static DragDropEffects Effect(DragEventArgs e) =>
+        e.DataTransfer.Contains(DataFormat.File) ? DragDropEffects.Copy : DragDropEffects.None;
+
+    public static List<string> Paths(DragEventArgs e) =>
+        e.DataTransfer.TryGetFiles()?.Select(f => f.TryGetLocalPath()).OfType<string>().ToList() ?? [];
 }
 
 /// <summary>One upload: thumbnail with a status badge, name, size and state, actions.</summary>

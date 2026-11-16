@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/screenshot-windows.png" width="360" alt="TeleSave panel on Windows: drop area, search and the files in Saved Messages">
+  <img src="docs/screenshot.png" width="860" alt="The TeleSave panel on macOS and Windows: drop area, upload queue with progress, and the files in Saved Messages">
 </p>
 
 ---

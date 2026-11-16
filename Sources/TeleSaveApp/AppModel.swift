@@ -107,6 +107,24 @@ final class AppModel {
 
     private static let encryptionKeyAccount = "tdlib-db-key"
 
+    #if DEBUG
+    /// Sample state for README screenshots: no Telegram connection, nothing persisted.
+    init(demoUser: TelegramUser, demoItems: [UploadItem], language: String) {
+        var demo = AppSettings()
+        demo.showChatFiles = false
+        demo.language = language
+        settings = demo
+        remoteConfig = nil
+        L10n.selectedCode = language
+        phase = .running
+        auth = .ready
+        connection = .ready
+        me = demoUser
+        items = demoItems
+        bytesPerSecond = 3_400_000
+    }
+    #endif
+
     init() {
         let loaded = AppSettings.load()
         L10n.selectedCode = loaded.language

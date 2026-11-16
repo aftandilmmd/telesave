@@ -1,0 +1,81 @@
+name: Windows
+
+on:
+  push:
+    branches: [main, windows]
+    paths:
+      - "windows/**"
+      - "Sources/TeleSaveCore/Resources/Localization/**"
+      - ".github/workflows/windows.yml"
+  pull_request:
+    paths:
+      - "windows/**"
+  workflow_dispatch:
+  release:
+    types: [published]
+
+env:
+  # Same TDLib as the macOS build (TDLibFramework 1.8.70-23383aef).
+  TDLIB_COMMIT: 23383aef218a3123f02b744bfa91bde21056a814
+  DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+
+jobs:
+  tdjson:
+    name: TDLib tdjson.dll (${{ matrix.arch }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x64
+            runner: windows-2022
+            cmake_arch: x64
+            triplet: x64-windows
+          - arch: arm64
+            runner: windows-11-arm
+            cmake_arch: ARM64
+            triplet: arm64-windows
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 300
+    steps:
+      - name: Cache tdjson
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: tdjson
+          key: tdjson-${{ env.TDLIB_COMMIT }}-${{ matrix.arch }}-v1
+
+      - name: Fetch TDLib and vcpkg
+        if: steps.cache.outputs.cache-hit != 'true'
+        shell: pwsh
+        run: |
+          git clone https://github.com/tdlib/td.git td
+          git -C td checkout $env:TDLIB_COMMIT
+          git clone https://github.com/microsoft/vcpkg.git vcpkg
+          ./vcpkg/bootstrap-vcpkg.bat -disableMetrics
+          ./vcpkg/vcpkg.exe install "gperf:${{ matrix.triplet }}" "openssl:${{ matrix.triplet }}" "zlib:${{ matrix.triplet }}"
+
+      - name: Build tdjson
+        if: steps.cache.outputs.cache-hit != 'true'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory td/build | Out-Null
+          cd td/build
+          cmake -A ${{ matrix.cmake_arch }} `
+            -DCMAKE_TOOLCHAIN_FILE="$env:GITHUB_WORKSPACE/vcpkg/scripts/buildsystems/vcpkg.cmake" `
+            -DVCPKG_TARGET_TRIPLET=${{ matrix.triplet }} `
+            -DCMAKE_BUILD_TYPE=Release ..
+          cmake --build . --target tdjson --config Release --parallel 4
+
+      - name: Collect DLLs
+        if: steps.cache.outputs.cache-hit != 'true'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory tdjson | Out-Null
+          Copy-Item td/build/Release/tdjson.dll tdjson/
+          Copy-Item vcpkg/installed/${{ matrix.triplet }}/bin/*.dll tdjson/
+          Get-ChildItem tdjson
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tdjson-win-${{ matrix.arch }}
+          path: tdjson

@@ -103,7 +103,7 @@ Not yet. TeleSave is macOS-only for now; Windows and Linux versions are planned.
 
 ## For developers
 
-Building from source, running the tests, configuring the API key and remote config, and packaging a notarized DMG are covered in [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
+Build the macOS app with `scripts/build-app.sh` (output: `dist/TeleSave.app`) and package a DMG with `scripts/make-dmg.sh`. Run the tests with `swift test`, and `swift run TeleSaveSmoke` to check the TDLib integration against Telegram. An API key and the remote config can be bundled at build time through `Config/Secrets.env` (see `Config/Secrets.env.example`); remote config files are signed with `scripts/remote-config.swift`.
 
 ---
 

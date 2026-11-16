@@ -9,3 +9,4 @@ remote-config/*.json
 !remote-config/config.example.json
 .claude/
 .harness-mem/
+docs/*.md

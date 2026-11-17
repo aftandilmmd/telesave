@@ -17,6 +17,16 @@ struct AppSettings: Equatable {
     /// "Send to TeleSave" in Finder's right-click menu.
     var finderServiceEnabled = true
 
+    /// Mac App Store build (`-DAPPSTORE`): updates come from the App Store, and the Finder menu is managed in
+    /// System Settings (toggling it needs a sandbox exception the App Store does not allow).
+    static var isAppStoreBuild: Bool {
+        #if APPSTORE
+        return true
+        #else
+        return false
+        #endif
+    }
+
     private enum Key {
         static let sendMediaCompressed = "sendMediaCompressed"
         static let groupAsAlbum = "groupAsAlbum"

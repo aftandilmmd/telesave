@@ -74,7 +74,7 @@ final class AppModel {
             guard settings != oldValue else { return }
             settings.save()
             L10n.selectedCode = settings.language
-            if settings.finderServiceEnabled != oldValue.finderServiceEnabled {
+            if !AppSettings.isAppStoreBuild, settings.finderServiceEnabled != oldValue.finderServiceEnabled {
                 FinderService.setEnabled(settings.finderServiceEnabled)
             }
             let queueSettings = settings.queueSettings
@@ -122,6 +122,14 @@ final class AppModel {
         me = demoUser
         items = demoItems
         bytesPerSecond = 3_400_000
+        chats = [
+            ChatSummary(id: 1, title: "Family", kind: .group, isForum: false, username: nil),
+            ChatSummary(id: 2, title: "Design Team", kind: .group, isForum: true, username: nil),
+            ChatSummary(id: 3, title: "Project Updates", kind: .channel, isForum: false, username: "projectupdates"),
+            ChatSummary(id: 4, title: "Elvin", kind: .user, isForum: false, username: "elvin"),
+            ChatSummary(id: 5, title: "Photo Archive", kind: .channel, isForum: false, username: nil),
+        ]
+        recentDestinations = [UploadDestination(chatId: 1, title: "Family")]
     }
     #endif
 
@@ -142,6 +150,8 @@ final class AppModel {
 
     /// Checks GitHub releases at launch and then daily.
     private func startUpdateChecks() {
+        // App Store builds are updated by the App Store; pointing users elsewhere is not allowed.
+        guard !AppSettings.isAppStoreBuild else { return }
         updateTask = Task { [weak self] in
             while !Task.isCancelled {
                 let release = await UpdateChecker.latestRelease()

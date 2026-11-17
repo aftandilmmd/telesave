@@ -63,8 +63,10 @@ struct SettingsView: View {
                     }
                     Toggle(L("Sohbetteki tüm dosyaları göster"), isOn: $model.settings.showChatFiles)
                         .help(L("Açıkken listede seçili sohbetin tüm dosyaları görünür; kapalıyken sadece TeleSave ile yüklenenler."))
-                    Toggle(L("Sağ tık menüsünde “%@”", L("TeleSave'e gönder")), isOn: $model.settings.finderServiceEnabled)
-                        .help(L("Finder'da dosya ve klasörlere sağ tıklayınca görünür. Menü adı macOS diline göre gösterilir."))
+                    if !AppSettings.isAppStoreBuild {
+                        Toggle(L("Sağ tık menüsünde “%@”", L("TeleSave'e gönder")), isOn: $model.settings.finderServiceEnabled)
+                            .help(L("Finder'da dosya ve klasörlere sağ tıklayınca görünür. Menü adı macOS diline göre gösterilir."))
+                    }
                     Toggle(L("Bildirim göster"), isOn: $model.settings.notificationsEnabled)
                     Toggle(L("İkona bırakınca pencereyi aç"), isOn: $model.settings.openPopoverOnDrop)
                 }

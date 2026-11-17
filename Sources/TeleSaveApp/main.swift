@@ -19,7 +19,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         serviceProvider = provider
         NSApp.servicesProvider = provider
         // Keep Finder's menu in sync with the setting (also registers the service on first launch).
-        FinderService.setEnabled(model.settings.finderServiceEnabled)
+        if !AppSettings.isAppStoreBuild { FinderService.setEnabled(model.settings.finderServiceEnabled) }
         if model.phase == .needsCredentials || !model.canUpload {
             // First run: open the popover so the user sees the setup / login step.
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
@@ -59,13 +59,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 }
 
 #if DEBUG
-/// `TeleSave --snapshot <out.png> [light|dark] [language]`: renders the real panel with sample data (README).
+/// `TeleSave --snapshot <out.png> [light|dark] [language] [main|settings|destination]`: renders the real panel
+/// with sample data (README and App Store screenshots).
 @MainActor
 enum Snapshot {
     static func run(_ args: [String]) -> Never {
         let out = URL(fileURLWithPath: args[0])
         let dark = args.count > 1 && args[1] == "dark"
         let language = args.count > 2 ? args[2] : "en"
+        let page = args.count > 3 ? args[3] : "main"
         NSApp.setActivationPolicy(.prohibited)
         NSApp.appearance = NSAppearance(named: dark ? .darkAqua : .aqua)
 
@@ -91,7 +93,13 @@ enum Snapshot {
             demoItems: items, language: language)
 
         let size = NSSize(width: 360, height: 480)
-        let host = NSHostingView(rootView: PopoverView(model: model))
+        let content: AnyView
+        switch page {
+        case "settings": content = AnyView(SettingsView(model: model, onClose: {}, onChangeKey: {}).frame(width: 360, height: 480))
+        case "destination": content = AnyView(DestinationPicker(model: model, onClose: {}).frame(width: 360, height: 480))
+        default: content = AnyView(PopoverView(model: model))
+        }
+        let host = NSHostingView(rootView: content.background(Color(nsColor: .windowBackgroundColor)))
         host.frame = NSRect(origin: .zero, size: size)
         let window = NSWindow(contentRect: host.frame, styleMask: [.borderless], backing: .buffered, defer: false)
         window.contentView = host

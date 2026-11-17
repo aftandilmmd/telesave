@@ -41,7 +41,7 @@ final class FinderServiceProvider: NSObject {
     }
 
     @objc func sendToTeleSave(_ pasteboard: NSPasteboard, userData: String?, error: AutoreleasingUnsafeMutablePointer<NSString>) {
-        guard let model, model.settings.finderServiceEnabled else { return }
+        guard let model, AppSettings.isAppStoreBuild || model.settings.finderServiceEnabled else { return }
         let urls = pasteboard.readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL] ?? []
         guard !urls.isEmpty else {
             error.pointee = "No files" as NSString

@@ -15,7 +15,10 @@ VERSION="${VERSION:-0.1.0}"
 BUILD="${BUILD:-$(date +%Y%m%d%H%M)}"
 BUNDLE_ID="${BUNDLE_ID:-com.telesave.app}"
 ARCHS="${ARCHS:-arm64 x86_64}"
-APP="dist/TeleSave.app"
+APP="${APP:-dist/TeleSave.app}"
+ENTITLEMENTS="${ENTITLEMENTS:-Config/TeleSave.entitlements}"
+SWIFT_FLAGS=(${SWIFT_FLAGS:-})   # e.g. "-Xswiftc -DAPPSTORE"
+PROVISIONING_PROFILE="${PROVISIONING_PROFILE:-}"
 
 TG_API_ID=""; TG_API_HASH=""; TG_CONFIG_URLS=""; TG_CONFIG_PUBLIC_KEY=""
 if [[ -f Config/Secrets.env ]]; then
@@ -41,8 +44,8 @@ ARCH_FLAGS=()
 for a in $ARCHS; do ARCH_FLAGS+=(--arch "$a"); done
 
 echo "› Building release ($ARCHS)"
-swift build -c release --product TeleSave "${ARCH_FLAGS[@]}" 2>&1 | grep -vE "ld: warning: object file .* was built for newer" || true
-BIN_DIR=$(swift build -c release --product TeleSave "${ARCH_FLAGS[@]}" --show-bin-path)
+swift build -c release --product TeleSave "${ARCH_FLAGS[@]}" ${SWIFT_FLAGS[@]+"${SWIFT_FLAGS[@]}"} 2>&1 | grep -vE "ld: warning: object file .* was built for newer" || true
+BIN_DIR=$(swift build -c release --product TeleSave "${ARCH_FLAGS[@]}" ${SWIFT_FLAGS[@]+"${SWIFT_FLAGS[@]}"} --show-bin-path)
 [[ -x "$BIN_DIR/TeleSave" ]] || { echo "build failed: $BIN_DIR/TeleSave missing"; exit 1; }
 
 echo "› Assembling $APP"
@@ -88,7 +91,10 @@ if [[ -z "${SIGN_IDENTITY:-}" ]]; then
   [[ -z "$SIGN_IDENTITY" ]] && SIGN_IDENTITY="-"
 fi
 echo "› Signing with: $SIGN_IDENTITY"
-SIGN_ARGS=(--force --options runtime --entitlements Config/TeleSave.entitlements --sign "$SIGN_IDENTITY")
+if [[ -n "$PROVISIONING_PROFILE" ]]; then
+  cp "$PROVISIONING_PROFILE" "$APP/Contents/embedded.provisionprofile"
+fi
+SIGN_ARGS=(--force --options runtime --entitlements "$ENTITLEMENTS" --sign "$SIGN_IDENTITY")
 [[ "$SIGN_IDENTITY" == Developer\ ID* ]] && SIGN_ARGS+=(--timestamp)
 codesign "${SIGN_ARGS[@]}" "$APP"
 codesign --verify --strict --verbose=1 "$APP"

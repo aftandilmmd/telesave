@@ -1,0 +1,32 @@
+Dosyayı menü çubuğuna bırakın, Telegram'a ulaşsın.
+
+TeleSave, üzerine sürüklediğiniz her şeyi Telegram'daki Kayıtlı Mesajlar'ınıza — tüm cihazlarınızda zaten olan bulut alanınıza — ya da seçtiğiniz herhangi bir sohbete, gruba veya kanala yükler.
+
+SÜRÜKLE, BIRAK, BİTTİ
+• Dosyaları menü çubuğuna doğru sürükleyin ve TeleSave simgesinin altında açılan rafa bırakın.
+• Ya da ⌘V ile yapıştırın, dosya seçin veya Finder'da sağ tık › TeleSave'e gönder.
+• Klasörler tek bir zip olarak ya da dosya dosya gönderilir.
+
+ORİJİNAL KALİTE
+• Fotoğraf ve videolar belge olarak, tam çözünürlükte ve dosya adlarıyla gönderilir.
+• Sıkıştırılmış medya veya albüm mü istiyorsunuz? Ayarlar'da tek düğme.
+
+İSTEDİĞİNİZ YERE
+• Varsayılan olarak Kayıtlı Mesajlar; ya da bir kişi, grup, kanal veya forum konusu.
+• TeleSave gönderme izniniz olup olmadığını kontrol eder ve Kayıtlı Mesajlar dışındaki hedefi vurgular; dosyalar yanlış sohbete gitmez.
+
+GÜVENİLİR
+• Aynı anda birden fazla yükleme, ilerleme doğrudan menü çubuğunda.
+• İnternet kesilince yüklemeler durur, bağlantı gelince devam eder — yeniden başlatmadan sonra bile.
+
+DOSYALARINIZ ELİNİZİN ALTINDA
+• Bir sohbetin dosyalarını gezin, arayın, önizleyin, indirin ve silin.
+• Arama büyük/küçük harf ve ı/i, ş/s gibi farkları önemsemez.
+
+GİZLİ
+• Dosyalar doğrudan Mac'inizden Telegram'a gider. TeleSave'in sunucusu yoktur, hiçbir veri toplamaz.
+• QR kod veya telefon numarasıyla giriş yapın; şifreniz TeleSave'e hiç ulaşmaz.
+
+Türkçe, Azerbaycanca, İngilizce ve Rusça. Dosya başına 2 GB (Telegram Premium ile 4 GB).
+
+TeleSave bağımsız bir uygulamadır ve Telegram ile bağlantılı değildir.

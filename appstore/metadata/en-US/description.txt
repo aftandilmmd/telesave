@@ -1,0 +1,32 @@
+Drop a file on your menu bar and it lands in Telegram.
+
+TeleSave uploads anything you drag onto it to your Telegram Saved Messages — the cloud drive you already have on every device — or to any chat, group or channel you choose.
+
+DRAG, DROP, DONE
+• Drag files toward the menu bar and drop them on the shelf under the TeleSave icon.
+• Or paste with ⌘V, choose files, or right-click in Finder › Send to TeleSave.
+• Folders go as one zip or file by file.
+
+ORIGINAL QUALITY
+• Photos and videos are sent as documents, in full resolution, with their file names.
+• Prefer compressed media or albums? One switch in Settings.
+
+SEND IT ANYWHERE
+• Saved Messages by default, or a person, group, channel or forum topic.
+• TeleSave checks you may post there, and highlights any target other than Saved Messages so nothing goes to the wrong chat.
+
+RELIABLE
+• Several uploads at once, with progress right in the menu bar.
+• Uploads pause when you go offline and resume when you are back — even after a restart.
+
+YOUR FILES AT A GLANCE
+• Browse, search, preview, download and delete the files of a chat.
+• Search ignores case and accents.
+
+PRIVATE
+• Files go straight from your Mac to Telegram. TeleSave has no server and collects no data.
+• Sign in with a QR code or your phone number; your password never reaches TeleSave.
+
+Available in English, Turkish, Azerbaijani and Russian. Files up to 2 GB (4 GB with Telegram Premium).
+
+TeleSave is an independent app and is not affiliated with Telegram.

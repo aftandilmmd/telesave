@@ -41,6 +41,7 @@ public sealed class ShellApp : Application
             _model = new AppModel(platform, action => Dispatcher.UIThread.Post(action));
             _panel = new PanelWindow(_model, platform);
             _model.PanelRequested += () => _panel.ShowPanel();
+            _model.PanelToggleRequested += () => _panel.TogglePanel();
             _model.PropertyChanged += (_, e) =>
             {
                 if (e.PropertyName is nameof(AppModel.StatusIcon) or nameof(AppModel.Settings) or nameof(AppModel.Auth)) UpdateTray();
@@ -48,6 +49,7 @@ public sealed class ShellApp : Application
             };
             _model.ApplyContextMenu();
             _model.EnableAutostartOnFirstLaunch();
+            _model.StartShortcuts();
             CreateTray();
             ApplyWindowSettings();
             StartPipeServer();
@@ -142,6 +144,11 @@ public sealed class ShellApp : Application
     /// </summary>
     private void Receive(IReadOnlyList<string> paths)
     {
+        if (paths is [ShellHost.SendClipboardArgument])
+        {
+            _model?.UploadClipboardFromShortcut();
+            return;
+        }
         if (paths.Count == 0) { _panel?.ShowPanel(); return; }
         _incoming.AddRange(paths);
         _incomingTimer?.Stop();

@@ -26,6 +26,8 @@ public sealed class FakePlatform : IPlatform
     public string AppVersion => "0.3.0";
     public (IReadOnlyList<string> Files, byte[]? Png) Clipboard { get; set; } = ([], null);
     public (IReadOnlyList<string> Files, byte[]? Png) ReadClipboard() => Clipboard;
+    public FakeShortcuts FakeShortcuts { get; } = new();
+    public IGlobalShortcuts Shortcuts => FakeShortcuts;
 
     private sealed class NoPower : IPowerManager
     {
@@ -89,4 +91,19 @@ public sealed class FakeClient(Action<TelegramEvent> onEvent, AuthState? initial
     public Task CancelAsync(IReadOnlyList<long> messageIds, UploadDestination? destination) => Task.CompletedTask;
     public void Close() { }
     public void Dispose() { }
+}
+
+public sealed class FakeShortcuts : IGlobalShortcuts
+{
+    public bool IsSupported => true;
+    public event Action<ShortcutAction>? Pressed;
+    public HashSet<ShortcutAction> Taken { get; } = [];
+    public IReadOnlyDictionary<ShortcutAction, KeyShortcut> Registered { get; private set; } = new Dictionary<ShortcutAction, KeyShortcut>();
+    public IReadOnlySet<ShortcutAction> Apply(IReadOnlyDictionary<ShortcutAction, KeyShortcut> shortcuts)
+    {
+        Registered = shortcuts.Where(p => !Taken.Contains(p.Key)).ToDictionary();
+        return shortcuts.Keys.Where(Taken.Contains).ToHashSet();
+    }
+    public void Suspend(bool suspended) { }
+    public void Press(ShortcutAction action) => Pressed?.Invoke(action);
 }

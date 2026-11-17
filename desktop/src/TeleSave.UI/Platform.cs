@@ -30,4 +30,6 @@ public interface IPlatform
     string AppVersion { get; }
     /// <summary>Files copied in the file manager, or an image (PNG bytes) on the clipboard.</summary>
     (IReadOnlyList<string> Files, byte[]? Png) ReadClipboard();
+    /// <summary>System-wide keyboard shortcuts.</summary>
+    IGlobalShortcuts Shortcuts { get; }
 }

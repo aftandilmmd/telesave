@@ -58,6 +58,8 @@ public sealed partial class AppModel : ObservableObject, IDisposable
 
     /// <summary>Asks the window layer to show the panel (e.g. after files arrive from Explorer).</summary>
     public event Action? PanelRequested;
+    /// <summary>Asks the window layer to show or hide the panel (global shortcut).</summary>
+    public event Action? PanelToggleRequested;
 
     // MARK: Dependencies and paths
 
@@ -319,7 +321,8 @@ public sealed partial class AppModel : ObservableObject, IDisposable
     // MARK: Uploads
 
     /// <param name="fromShell">Files came from Explorer / the taskbar / the edge shelf rather than the open panel.</param>
-    public void HandleDrop(IReadOnlyList<string> paths, bool fromShell = false, bool temporary = false)
+    /// <param name="fromShortcut">Sent with the global shortcut: the panel only opens if there is something to see.</param>
+    public void HandleDrop(IReadOnlyList<string> paths, bool fromShell = false, bool temporary = false, bool fromShortcut = false)
     {
         if (paths.Count == 0) return;
         if (!CanUpload || Me is null || _queue is null)
@@ -338,12 +341,13 @@ public sealed partial class AppModel : ObservableObject, IDisposable
             queue.Enqueue(result.Accepted, destination);
             if (result.Rejected.Count > 0) ShowNotice(string.Join("\n", result.Rejected.Select(r => r.Message)));
             // Always show the panel when files go somewhere other than Saved Messages, so the target is visible.
-            if (fromShell && (settings.OpenPanelOnDrop || result.Rejected.Count > 0 || !destination.IsSavedMessages)) PanelRequested?.Invoke();
+            var attention = result.Rejected.Count > 0 || !destination.IsSavedMessages;
+            if ((fromShell && (settings.OpenPanelOnDrop || attention)) || (fromShortcut && attention)) PanelRequested?.Invoke();
         }), TaskScheduler.Default);
     }
 
     /// <summary>An image from the clipboard (PNG bytes): saved as a temporary file and uploaded.</summary>
-    public void HandlePastedImage(byte[] png)
+    public void HandlePastedImage(byte[] png, bool fromShortcut = false)
     {
         try
         {
@@ -351,7 +355,7 @@ public sealed partial class AppModel : ObservableObject, IDisposable
             Directory.CreateDirectory(folder);
             var file = Path.Combine(folder, L10n.T("Yapıştırılan görsel %@.png", DateTime.Now.ToString("yyyy-MM-dd 'at' HH.mm.ss", System.Globalization.CultureInfo.InvariantCulture)));
             File.WriteAllBytes(file, png);
-            HandleDrop([file], temporary: true);
+            HandleDrop([file], temporary: true, fromShortcut: fromShortcut);
         }
         catch (Exception e)
         {
@@ -359,13 +363,68 @@ public sealed partial class AppModel : ObservableObject, IDisposable
         }
     }
 
-    /// <summary>Ctrl+V / "Paste from clipboard": copied files, or a copied image / screenshot.</summary>
-    public void PasteFromClipboard()
+    /// <summary>Ctrl+V / "Paste from clipboard": copied files, or a copied image / screenshot. False if there was nothing.</summary>
+    public bool PasteFromClipboard(bool fromShortcut = false)
     {
         var (files, png) = Platform.ReadClipboard();
-        if (files.Count > 0) HandleDrop(files);
-        else if (png is not null) HandlePastedImage(png);
-        else ShowNotice(L10n.T("Panoda gönderilecek dosya ya da görsel yok."));
+        if (files.Count > 0) HandleDrop(files, fromShortcut: fromShortcut);
+        else if (png is not null) HandlePastedImage(png, fromShortcut);
+        else
+        {
+            ShowNotice(L10n.T("Panoda gönderilecek dosya ya da görsel yok."));
+            return false;
+        }
+        return true;
+    }
+
+    // MARK: Global shortcuts
+
+    /// <summary>Actions whose shortcut another app already holds; shown in Settings.</summary>
+    [ObservableProperty] private IReadOnlySet<ShortcutAction> _failedShortcuts = new HashSet<ShortcutAction>();
+    private bool _shortcutsStarted;
+
+    /// <summary>Registers the shortcuts from the settings (called once by the shell).</summary>
+    public void StartShortcuts()
+    {
+        if (!_shortcutsStarted)
+        {
+            _shortcutsStarted = true;
+            Platform.Shortcuts.Pressed += action => _post(() => Perform(action));
+        }
+        ApplyShortcuts();
+    }
+
+    private void ApplyShortcuts()
+    {
+        if (!_shortcutsStarted) return;
+        try { FailedShortcuts = Platform.Shortcuts.Apply(Settings.Shortcuts); }
+        catch (Exception) { FailedShortcuts = Settings.Shortcuts.Keys.ToHashSet(); }
+    }
+
+    public void Perform(ShortcutAction action)
+    {
+        if (action == ShortcutAction.TogglePanel) PanelToggleRequested?.Invoke();
+        else UploadClipboardFromShortcut();
+    }
+
+    /// <summary>Uploads copied files (or a copied image) without opening the panel, unless there is something to see.</summary>
+    public void UploadClipboardFromShortcut()
+    {
+        if (!CanUpload)
+        {
+            ShowNotice(L10n.T("Yüklemek için önce Telegram'a giriş yapın."));
+            PanelRequested?.Invoke();
+            return;
+        }
+        if (!PasteFromClipboard(fromShortcut: true)) PanelRequested?.Invoke();
+    }
+
+    /// <summary>Warning shown under a shortcut in Settings, if it will not work as expected.</summary>
+    public string? ShortcutConflict(ShortcutAction action)
+    {
+        if (!Settings.Shortcuts.ContainsKey(action)) return null;
+        if (Settings.UploadShortcut is not null && Settings.UploadShortcut == Settings.PanelShortcut) return L10n.T("İki işlem aynı kısayolu kullanıyor.");
+        return FailedShortcuts.Contains(action) ? L10n.T("Bu kısayol başka bir uygulama tarafından kullanılıyor.") : null;
     }
 
     public void Cancel(UploadItem item) => _queue?.Cancel(item.Id);
@@ -500,6 +559,7 @@ public sealed partial class AppModel : ObservableObject, IDisposable
         L10n.SelectedCode = updated.Language;
         _queue?.UpdateSettings(updated.QueueSettings);
         if (updated.ContextMenuEnabled != old.ContextMenuEnabled || updated.Language != old.Language) ApplyContextMenu();
+        if (updated.UploadShortcut != old.UploadShortcut || updated.PanelShortcut != old.PanelShortcut) ApplyShortcuts();
     }
 
     public void ApplyContextMenu()

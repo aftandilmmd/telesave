@@ -44,6 +44,10 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
         }
 
         model.onRequestPopover = { [weak self] in self?.showPopover() }
+        model.onTogglePopover = { [weak self] in self?.togglePopover() }
+        GlobalShortcuts.shared.onAction = { [weak model] action in model?.perform(action) }
+        GlobalShortcuts.shared.onChange = { [weak model] in model?.shortcutsChanged() }
+        model.applyShortcuts()
 
         let shelf = DropShelfController(
             anchor: { [weak self] in
@@ -63,6 +67,7 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
                   event.charactersIgnoringModifiers?.lowercased() == "v",
                   event.window === self.popover.contentViewController?.view.window,
                   !(event.window?.firstResponder is NSText),
+                  !ShortcutRecorder.isRecording,
                   self.model.canUpload else { return event }
             self.model.pasteFromClipboard()
             return nil

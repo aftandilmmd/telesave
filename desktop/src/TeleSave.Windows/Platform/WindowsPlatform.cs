@@ -25,6 +25,10 @@ public sealed class WindowsPlatform : IShellPlatform
 
     public WindowsPlatform() => Secrets = new DpapiSecretStore(Path.Combine(DataDirectory, "secrets"));
 
+    private WindowsShortcuts? _shortcuts;
+    /// <summary>Created on first use, which is on the UI thread (its message loop delivers the hotkeys).</summary>
+    public IGlobalShortcuts Shortcuts => _shortcuts ??= new WindowsShortcuts();
+
     [StructLayout(LayoutKind.Sequential)]
     private struct CursorPoint { public int X, Y; }
 

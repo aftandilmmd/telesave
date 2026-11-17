@@ -192,6 +192,22 @@
     "Dosyayı görev çubuğundaki TeleSave düğmesinin üstüne sürükleyince bırakma paneli açılır.": "Перетащите файл на кнопку TeleSave на панели задач, чтобы открыть панель.",
     "Gezgin'de dosya ve klasörlere sağ tıklayınca görünür.": "Появляется при щелчке правой кнопкой по файлам и папкам в Проводнике.",
     "Ekran kenarında bırakma şeridi": "Полоса для файлов у края экрана",
-    "Ekranın sağ kenarında ince bir şerit; üstüne dosya sürükleyince genişler.": "Узкая полоса у правого края экрана; расширяется, когда на неё перетаскивают файл."
+    "Ekranın sağ kenarında ince bir şerit; üstüne dosya sürükleyince genişler.": "Узкая полоса у правого края экрана; расширяется, когда на неё перетаскивают файл.",
+    "Kısayollar": "Сочетания клавиш",
+    "Kopyalananları yükle": "Загрузить скопированное",
+    "Finder'da ⌘C ile kopyaladığınız dosyaları ya da bir ekran görüntüsünü her yerden gönderir.": "Отправляет файлы, скопированные в Finder через ⌘C, или скопированный снимок экрана — из любого места.",
+    "Paneli aç/kapat": "Показать/скрыть панель",
+    "Tuşlara basın…": "Нажмите клавиши…",
+    "Yok": "Нет",
+    "Değiştirmek için tıklayın, sonra yeni tuş kombinasyonuna basın. Esc: vazgeç, ⌫: kapat.": "Нажмите, затем новое сочетание клавиш. Esc — отмена, ⌫ — выключить.",
+    "Kısayolu kapat": "Выключить сочетание",
+    "⌃, ⌥ veya ⌘ ile birlikte bir tuşa basın.": "Нажмите клавишу вместе с ⌃, ⌥ или ⌘.",
+    "İki işlem aynı kısayolu kullanıyor.": "Оба действия используют одно сочетание.",
+    "Bu kısayol başka bir uygulama tarafından kullanılıyor.": "Это сочетание уже занято другим приложением.",
+    "macOS da bu kısayolu kullanıyor.": "macOS тоже использует это сочетание.",
+    "Bu masaüstünde uygulamalar genel kısayol kaydedemez. Sistem ayarlarındaki klavye kısayollarından şu komuta bir kısayol atayın: %@": "На этом рабочем столе приложения не могут регистрировать глобальные сочетания. Назначьте сочетание для этой команды в системных настройках клавиатуры: %@",
+    "Dosya yöneticisinde Ctrl+C ile kopyaladığınız dosyaları ya da bir ekran görüntüsünü her yerden gönderir.": "Отправляет файлы, скопированные в файловом менеджере через Ctrl+C, или скопированный снимок экрана — из любого места.",
+    "Değiştirmek için tıklayın, sonra yeni tuş kombinasyonuna basın. Esc: vazgeç, Backspace: kapat.": "Нажмите, затем новое сочетание клавиш. Esc — отмена, Backspace — выключить.",
+    "Ctrl, Alt veya %@ ile birlikte bir harf, rakam ya da F tuşuna basın.": "Нажмите букву, цифру или клавишу F вместе с Ctrl, Alt или %@."
   }
 }

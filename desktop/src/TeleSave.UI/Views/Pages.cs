@@ -1,5 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input;
+using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
@@ -403,7 +405,7 @@ public sealed class SettingsPage : ModelPage
 
     protected override void Refresh()
     {
-        var key = $"{Model.Settings}|{Model.Me}|{Model.Auth}|{Model.AvailableUpdate}";
+        var key = $"{Model.Settings}|{Model.Me}|{Model.Auth}|{Model.AvailableUpdate}|{string.Join(",", Model.FailedShortcuts)}";
         if (key == _shown) return;
         _shown = key;
         var s = Model.Settings;
@@ -418,6 +420,8 @@ public sealed class SettingsPage : ModelPage
             Choice(L10n.T("Aynı anda yükleme: %@", s.MaxConcurrent.ToString()), ["1", "2", "3", "4"], Math.Clamp(s.MaxConcurrent, 1, 4) - 1,
                 i => s with { MaxConcurrent = i + 1 }),
             Caption()));
+
+        stack.Children.Add(Section(L10n.T("Kısayollar"), ShortcutRows(s)));
 
         var languages = new List<string> { L10n.T("Sistem (%@)", L10n.Languages.FirstOrDefault(l => l.Code == L10n.SystemLanguageCode)?.Name ?? "English") };
         languages.AddRange(L10n.Languages.Select(l => l.Name));
@@ -484,6 +488,84 @@ public sealed class SettingsPage : ModelPage
         Grid.SetColumn(combo, 1);
         row.Children.Add(combo);
         return row;
+    }
+
+    private Control[] ShortcutRows(AppSettings s)
+    {
+        if (!Model.Platform.Shortcuts.IsSupported)
+        {
+            // Wayland: apps cannot register global shortcuts; the desktop's own shortcut settings can run the command.
+            return [Ui.Caption(L10n.T("Bu masaüstünde uygulamalar genel kısayol kaydedemez. Sistem ayarlarındaki klavye kısayollarından şu komuta bir kısayol atayın: %@", "telesave --send-clipboard"), wrap: true)];
+        }
+        return
+        [
+            ShortcutRow(L10n.T("Kopyalananları yükle"), s.UploadShortcut, ShortcutAction.UploadClipboard, v => Model.Settings with { UploadShortcut = v },
+                L10n.T("Dosya yöneticisinde Ctrl+C ile kopyaladığınız dosyaları ya da bir ekran görüntüsünü her yerden gönderir.")),
+            ShortcutRow(L10n.T("Paneli aç/kapat"), s.PanelShortcut, ShortcutAction.TogglePanel, v => Model.Settings with { PanelShortcut = v }),
+        ];
+    }
+
+    /// <summary>Click the button, then press the new combination. Esc cancels, Backspace/Delete turns the shortcut off.</summary>
+    private Control ShortcutRow(string label, KeyShortcut? value, ShortcutAction action, Func<KeyShortcut?, AppSettings> apply, string? help = null)
+    {
+        var windows = OperatingSystem.IsWindows();
+        string Shown() => value?.Display(windows) ?? L10n.T("Yok");
+        var button = new Button { Content = Shown(), MinWidth = 140, HorizontalContentAlignment = HorizontalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Right };
+        ToolTip.SetTip(button, L10n.T("Değiştirmek için tıklayın, sonra yeni tuş kombinasyonuna basın. Esc: vazgeç, Backspace: kapat."));
+        var warning = Ui.Caption(Model.ShortcutConflict(action) ?? "", Ui.Orange, wrap: true);
+        warning.IsVisible = warning.Text!.Length > 0;
+
+        TopLevel? top = null;
+        EventHandler<KeyEventArgs>? handler = null;
+        void Stop()
+        {
+            if (handler is null) return;
+            top?.RemoveHandler(KeyDownEvent, handler);
+            handler = null;
+            Model.Platform.Shortcuts.Suspend(false);
+        }
+        void Set(KeyShortcut? shortcut)
+        {
+            Stop();
+            button.Content = shortcut?.Display(windows) ?? L10n.T("Yok");
+            Update(_ => apply(shortcut));
+        }
+        button.Click += (_, _) =>
+        {
+            if (handler is not null) { Stop(); button.Content = Shown(); return; }
+            top = TopLevel.GetTopLevel(button);
+            if (top is null) return;
+            button.Content = L10n.T("Tuşlara basın…");
+            Model.Platform.Shortcuts.Suspend(true);
+            handler = (_, e) =>
+            {
+                e.Handled = true;
+                if (e.Key is Key.LeftCtrl or Key.RightCtrl or Key.LeftAlt or Key.RightAlt or Key.LeftShift or Key.RightShift or Key.LWin or Key.RWin) return;
+                var plain = e.KeyModifiers == KeyModifiers.None;
+                if (plain && e.Key == Key.Escape) { Stop(); button.Content = Shown(); }
+                else if (plain && e.Key is Key.Back or Key.Delete) Set(null);
+                else if (KeyShortcut.From(e.Key, e.KeyModifiers) is { } shortcut) Set(shortcut);
+                else
+                {
+                    warning.Text = L10n.T("Ctrl, Alt veya %@ ile birlikte bir harf, rakam ya da F tuşuna basın.", windows ? "Win" : "Super");
+                    warning.IsVisible = true;
+                }
+            };
+            top.AddHandler(KeyDownEvent, handler, RoutingStrategies.Tunnel);
+        };
+        button.LostFocus += (_, _) => { if (handler is not null) { Stop(); button.Content = Shown(); } };
+
+        var row = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto") };
+        var text = new StackPanel { Spacing = 2, VerticalAlignment = VerticalAlignment.Center };
+        text.Children.Add(Ui.Text(label, 12.5, wrap: true));
+        if (help is not null) text.Children.Add(Ui.Caption(help, wrap: true));
+        row.Children.Add(text);
+        Grid.SetColumn(button, 1);
+        row.Children.Add(button);
+        var stack = new StackPanel { Spacing = 3 };
+        stack.Children.Add(row);
+        stack.Children.Add(warning);
+        return stack;
     }
 
     private Control Caption()

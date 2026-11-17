@@ -74,6 +74,7 @@ final class AppModel {
             guard settings != oldValue else { return }
             settings.save()
             L10n.selectedCode = settings.language
+            if settings.shortcuts != oldValue.shortcuts { applyShortcuts() }
             if !AppSettings.isAppStoreBuild, settings.finderServiceEnabled != oldValue.finderServiceEnabled {
                 FinderService.setEnabled(settings.finderServiceEnabled)
             }
@@ -453,7 +454,7 @@ final class AppModel {
 
     // MARK: - Uploads
 
-    func handleDrop(_ urls: [URL], fromStatusItem: Bool = false, temporary: Bool = false) {
+    func handleDrop(_ urls: [URL], fromStatusItem: Bool = false, fromShortcut: Bool = false, temporary: Bool = false) {
         guard !urls.isEmpty else { return }
         guard canUpload, let me, let queue else {
             showNotice(L("Yüklemek için önce Telegram'a giriş yapın."))
@@ -467,23 +468,70 @@ final class AppModel {
                 showNotice(result.rejected.map(\.message).joined(separator: "\n"))
             }
             // Always show the panel when files go somewhere other than Saved Messages, so the target is visible.
-            if fromStatusItem && (settings.openPopoverOnDrop || !result.rejected.isEmpty || !destination.isSavedMessages) {
+            let attention = !result.rejected.isEmpty || !destination.isSavedMessages
+            if (fromStatusItem && (settings.openPopoverOnDrop || attention)) || (fromShortcut && attention) {
                 onRequestPopover?()
             }
         }
     }
 
+    // MARK: - Global shortcuts
+
+    /// Actions whose shortcut another app already holds; shown in Settings.
+    private(set) var failedShortcuts: Set<ShortcutAction> = []
+    /// Toggles the panel (set by the status item).
+    var onTogglePopover: (() -> Void)?
+
+    func applyShortcuts() {
+        failedShortcuts = GlobalShortcuts.shared.apply(settings.shortcuts)
+    }
+
+    func shortcutsChanged() {
+        failedShortcuts = GlobalShortcuts.shared.failed
+    }
+
+    func perform(_ action: ShortcutAction) {
+        switch action {
+        case .uploadClipboard: uploadClipboardFromShortcut()
+        case .togglePanel: onTogglePopover?()
+        }
+    }
+
+    /// Warning shown under a shortcut in Settings, if it will not work as expected.
+    func shortcutConflict(_ action: ShortcutAction) -> String? {
+        guard let shortcut = settings.shortcuts[action] else { return nil }
+        if settings.uploadShortcut != nil && settings.uploadShortcut == settings.panelShortcut {
+            return L("İki işlem aynı kısayolu kullanıyor.")
+        }
+        if failedShortcuts.contains(action) { return L("Bu kısayol başka bir uygulama tarafından kullanılıyor.") }
+        if shortcut.isUsedBySystem { return L("macOS da bu kısayolu kullanıyor.") }
+        return nil
+    }
+
+    /// Shortcut: uploads copied files (or a copied image) without opening the panel. The panel only opens when
+    /// there is something to see: not signed in, nothing to send, a rejected file, or a target other than Saved Messages.
+    func uploadClipboardFromShortcut() {
+        guard canUpload else {
+            showNotice(L("Yüklemek için önce Telegram'a giriş yapın."))
+            onRequestPopover?()
+            return
+        }
+        if !pasteFromClipboard(viaShortcut: true) { onRequestPopover?() }
+    }
+
     /// Sends what is on the clipboard: files copied in Finder, or an image (e.g. a screenshot copied with ⌃⇧⌘4).
-    func pasteFromClipboard() {
+    /// Returns false when there was nothing to send.
+    @discardableResult
+    func pasteFromClipboard(viaShortcut: Bool = false) -> Bool {
         let pasteboard = NSPasteboard.general
         if let urls = pasteboard.readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL],
            !urls.isEmpty {
-            handleDrop(urls)
-            return
+            handleDrop(urls, fromShortcut: viaShortcut)
+            return true
         }
         guard let png = Self.pngData(from: pasteboard) else {
             showNotice(L("Panoda gönderilecek dosya ya da görsel yok."))
-            return
+            return false
         }
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd 'at' HH.mm.ss"
@@ -493,9 +541,11 @@ final class AppModel {
         do {
             try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
             try png.write(to: file)
-            handleDrop([file], temporary: true)
+            handleDrop([file], fromShortcut: viaShortcut, temporary: true)
+            return true
         } catch {
             showNotice(L("Görsel kaydedilemedi: %@", error.localizedDescription))
+            return false
         }
     }
 

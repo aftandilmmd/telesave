@@ -192,6 +192,22 @@
     "Dosyayı görev çubuğundaki TeleSave düğmesinin üstüne sürükleyince bırakma paneli açılır.": "Drag a file onto the TeleSave button in the taskbar to open the drop panel.",
     "Gezgin'de dosya ve klasörlere sağ tıklayınca görünür.": "Appears when you right-click files and folders in File Explorer.",
     "Ekran kenarında bırakma şeridi": "Drop strip at the screen edge",
-    "Ekranın sağ kenarında ince bir şerit; üstüne dosya sürükleyince genişler.": "A thin strip at the right edge of the screen that widens when you drag a file onto it."
+    "Ekranın sağ kenarında ince bir şerit; üstüne dosya sürükleyince genişler.": "A thin strip at the right edge of the screen that widens when you drag a file onto it.",
+    "Kısayollar": "Shortcuts",
+    "Kopyalananları yükle": "Upload copied files",
+    "Finder'da ⌘C ile kopyaladığınız dosyaları ya da bir ekran görüntüsünü her yerden gönderir.": "Sends files you copied in Finder with ⌘C, or a copied screenshot, from anywhere.",
+    "Paneli aç/kapat": "Show/hide panel",
+    "Tuşlara basın…": "Press keys…",
+    "Yok": "None",
+    "Değiştirmek için tıklayın, sonra yeni tuş kombinasyonuna basın. Esc: vazgeç, ⌫: kapat.": "Click, then press the new key combination. Esc: cancel, ⌫: turn off.",
+    "Kısayolu kapat": "Turn off shortcut",
+    "⌃, ⌥ veya ⌘ ile birlikte bir tuşa basın.": "Press a key together with ⌃, ⌥ or ⌘.",
+    "İki işlem aynı kısayolu kullanıyor.": "Both actions use the same shortcut.",
+    "Bu kısayol başka bir uygulama tarafından kullanılıyor.": "Another app is already using this shortcut.",
+    "macOS da bu kısayolu kullanıyor.": "macOS also uses this shortcut.",
+    "Bu masaüstünde uygulamalar genel kısayol kaydedemez. Sistem ayarlarındaki klavye kısayollarından şu komuta bir kısayol atayın: %@": "On this desktop, apps cannot register global shortcuts. In the system keyboard settings, add a custom shortcut for this command: %@",
+    "Dosya yöneticisinde Ctrl+C ile kopyaladığınız dosyaları ya da bir ekran görüntüsünü her yerden gönderir.": "Sends files you copied in the file manager with Ctrl+C, or a copied screenshot, from anywhere.",
+    "Değiştirmek için tıklayın, sonra yeni tuş kombinasyonuna basın. Esc: vazgeç, Backspace: kapat.": "Click, then press the new key combination. Esc: cancel, Backspace: turn off.",
+    "Ctrl, Alt veya %@ ile birlikte bir harf, rakam ya da F tuşuna basın.": "Press a letter, digit or F key together with Ctrl, Alt or %@."
   }
 }

@@ -16,6 +16,10 @@ struct AppSettings: Equatable {
     var language = L10n.systemCode
     /// "Send to TeleSave" in Finder's right-click menu.
     var finderServiceEnabled = true
+    /// System-wide shortcut that uploads what is on the clipboard (nil = off).
+    var uploadShortcut: KeyShortcut? = .defaultUpload
+    /// System-wide shortcut that opens/closes the panel (nil = off).
+    var panelShortcut: KeyShortcut? = .defaultPanel
 
     /// Mac App Store build (`-DAPPSTORE`): updates come from the App Store, and the Finder menu is managed in
     /// System Settings (toggling it needs a sandbox exception the App Store does not allow).
@@ -39,6 +43,8 @@ struct AppSettings: Equatable {
         static let language = "appLanguage"
         static let finderServiceEnabled = "finderServiceEnabled"
         static let launchAtLoginConfigured = "launchAtLoginConfigured"
+        static let uploadShortcut = "uploadShortcut"
+        static let panelShortcut = "panelShortcut"
     }
 
     static func load(from defaults: UserDefaults = .standard) -> AppSettings {
@@ -53,6 +59,9 @@ struct AppSettings: Equatable {
         if defaults.object(forKey: Key.finderServiceEnabled) != nil { s.finderServiceEnabled = defaults.bool(forKey: Key.finderServiceEnabled) }
         s.language = defaults.string(forKey: Key.language) ?? L10n.systemCode
         s.folderMode = defaults.string(forKey: Key.folderMode).flatMap(FolderMode.init(rawValue:)) ?? .zip
+        // Stored as JSON; "null" means the user turned the shortcut off.
+        if let data = defaults.data(forKey: Key.uploadShortcut) { s.uploadShortcut = try? JSONDecoder().decode(KeyShortcut?.self, from: data) }
+        if let data = defaults.data(forKey: Key.panelShortcut) { s.panelShortcut = try? JSONDecoder().decode(KeyShortcut?.self, from: data) }
         return s
     }
 
@@ -67,6 +76,15 @@ struct AppSettings: Equatable {
         defaults.set(showChatFiles, forKey: Key.showChatFiles)
         defaults.set(language, forKey: Key.language)
         defaults.set(finderServiceEnabled, forKey: Key.finderServiceEnabled)
+        defaults.set(try? JSONEncoder().encode(uploadShortcut), forKey: Key.uploadShortcut)
+        defaults.set(try? JSONEncoder().encode(panelShortcut), forKey: Key.panelShortcut)
+    }
+
+    var shortcuts: [ShortcutAction: KeyShortcut] {
+        var map: [ShortcutAction: KeyShortcut] = [:]
+        map[.uploadClipboard] = uploadShortcut
+        map[.togglePanel] = panelShortcut
+        return map
     }
 
     var queueSettings: UploadQueue.Settings {

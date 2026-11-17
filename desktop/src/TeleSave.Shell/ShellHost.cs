@@ -17,10 +17,14 @@ public interface IShellPlatform : IPlatform
 
 /// <summary>
 /// Entry point shared by the Windows and Linux executables. Arguments: <c>--send &lt;paths…&gt;</c>
-/// (file manager menu), <c>--autostart</c> (launched at login), <c>--cleanup</c> (uninstall).
+/// (file manager menu), <c>--send-clipboard</c> (upload what is on the clipboard; for desktops where the
+/// shortcut is set up in the system settings, e.g. Wayland), <c>--autostart</c> (launched at login),
+/// <c>--cleanup</c> (uninstall).
 /// </summary>
 public static class ShellHost
 {
+    public const string SendClipboardArgument = "--send-clipboard";
+
     private static Mutex? _instance;
 
     public static int Run(string[] args, Func<IShellPlatform> createPlatform)
@@ -32,7 +36,9 @@ public static class ShellHost
         }
         if (args.Contains("--self-test")) return SelfTest(createPlatform());
         var pipeName = $"TeleSave-{Environment.UserName}";
-        var paths = args.SkipWhile(a => a != "--send").Skip(1).Where(a => !a.StartsWith("--")).ToList();
+        var paths = args.Contains(SendClipboardArgument)
+            ? [SendClipboardArgument]
+            : args.SkipWhile(a => a != "--send").Skip(1).Where(a => !a.StartsWith("--")).ToList();
 
         // One TeleSave per user: a second launch hands its files to the running one and exits.
         _instance = new Mutex(true, pipeName, out var first);
@@ -43,7 +49,8 @@ public static class ShellHost
         }
 
         ShellApp.CreatePlatform = createPlatform;
-        ShellApp.InitialPaths = paths;
+        // Not running yet: just start (signing in takes a moment, so the clipboard is not sent).
+        ShellApp.InitialPaths = paths is [SendClipboardArgument] ? [] : paths;
         ShellApp.LaunchedAtLogin = args.Contains("--autostart");
         ShellApp.PipeName = pipeName;
         return AppBuilder.Configure<ShellApp>().UsePlatformDetect().LogToTrace()

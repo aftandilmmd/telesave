@@ -40,6 +40,20 @@ struct SettingsView: View {
                         .foregroundStyle(.secondary)
                 }
 
+                Section(L("Kısayollar")) {
+                    LabeledContent {
+                        ShortcutRecorder(shortcut: $model.settings.uploadShortcut, conflict: model.shortcutConflict(.uploadClipboard))
+                    } label: {
+                        Text(L("Kopyalananları yükle"))
+                        Text(L("Finder'da ⌘C ile kopyaladığınız dosyaları ya da bir ekran görüntüsünü her yerden gönderir."))
+                    }
+                    LabeledContent {
+                        ShortcutRecorder(shortcut: $model.settings.panelShortcut, conflict: model.shortcutConflict(.togglePanel))
+                    } label: {
+                        Text(L("Paneli aç/kapat"))
+                    }
+                }
+
                 Section(L("Uygulama")) {
                     Picker(L("Dil"), selection: $model.settings.language) {
                         Text(L("Sistem (%@)", L10n.languages.first { $0.code == L10n.systemLanguageCode }?.name ?? "English"))

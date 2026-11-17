@@ -51,6 +51,9 @@ public sealed class LinuxPlatform : IShellPlatform
     // top or bottom panel's clock corner, which is where tray icons live on most desktops.
     public PixelPoint? PointerPosition => null;
 
+    private X11Shortcuts? _shortcuts;
+    public TeleSave.UI.IGlobalShortcuts Shortcuts => _shortcuts ??= new X11Shortcuts();
+
     // MARK: Build-time metadata (same as Windows)
 
     private static string? Metadata(string key)

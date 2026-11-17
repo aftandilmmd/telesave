@@ -173,6 +173,31 @@ jobs:
           name: linux-release-${{ matrix.arch }}
           path: desktop/dist
 
+      - name: Snap (Snap Store)
+        run: |
+          sudo snap install snapcraft --classic
+          snap=desktop/packaging/snap
+          cp -a desktop/publish/linux-${{ matrix.arch }} "$snap/app"
+          cp desktop/src/TeleSave.Shell/icon.png "$snap/icon.png"
+          sed -i 's/^version: .*/version: "${{ steps.version.outputs.value }}"/' "$snap/snapcraft.yaml"
+          (cd "$snap" && sudo snapcraft pack --destructive-mode --verbosity=brief)
+          mkdir -p desktop/snap-dist && mv "$snap"/*.snap desktop/snap-dist/
+          ls -la desktop/snap-dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: snap-${{ matrix.arch }}
+          path: desktop/snap-dist
+
+      - name: Upload to the Snap Store
+        if: github.event_name == 'release'
+        env:
+          # From `snapcraft export-login -` (Ubuntu One account that registered the name "telesave").
+          SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
+        run: |
+          if [ -z "$SNAPCRAFT_STORE_CREDENTIALS" ]; then echo "SNAPCRAFT_STORE_CREDENTIALS not set: skipped"; exit 0; fi
+          snapcraft upload --release=stable desktop/snap-dist/*.snap
+
       - name: Attach to GitHub release
         if: github.event_name == 'release'
         env:

@@ -1,0 +1,67 @@
+# Snap Store package. CI copies the published app into ./app and the icon to ./icon.png, then runs `snapcraft pack
+# --destructive-mode` on Ubuntu 22.04 (same glibc as core22 and the bundled TDLib).
+name: telesave
+title: TeleSave
+summary: Drop files, they land in your Telegram Saved Messages
+description: |
+  TeleSave is a small tray app that sends files to your own Telegram cloud.
+
+  Drop files or folders on the tray icon (or its panel), or copy them and press
+  Ctrl+Super+Alt+V: they upload to your Saved Messages, or to any chat, group or
+  channel you pick. Big files, folders (as zip), albums and captions are supported,
+  and uploads continue after a restart.
+
+  You sign in with your own Telegram account through the official Telegram
+  library (TDLib). TeleSave has no server and collects no data.
+
+  Global shortcuts work on X11 sessions. On Wayland, bind
+  `telesave --send-clipboard` to a key in your desktop's keyboard settings.
+version: "0.0.0" # set by CI
+license: Proprietary
+website: https://github.com/aftandilmmd/telesave
+issues: https://github.com/aftandilmmd/telesave/issues
+icon: icon.png # copied in by CI
+base: core22
+grade: stable
+confinement: strict
+compression: lzo
+
+apps:
+  telesave:
+    command: app/telesave
+    extensions: [gnome]
+    desktop: telesave.desktop
+    # The app writes $SNAP_USER_DATA/.config/autostart/telesave.desktop when "Launch at login" is on.
+    autostart: telesave.desktop
+    environment:
+      DOTNET_SYSTEM_GLOBALIZATION_INVARIANT: "0"
+    plugs:
+      - network
+      - network-status
+      - home
+      - removable-media
+      - x11
+      - wayland
+      - desktop
+      - desktop-legacy
+      - unity7 # tray icon (StatusNotifierItem)
+      - password-manager-service # sign-in kept in the keyring via secret-tool
+
+parts:
+  telesave:
+    plugin: dump
+    source: .
+    stage:
+      - -snapcraft.yaml
+      - -icon.png
+    override-build: |
+      craftctl default
+      chmod 755 "$CRAFT_PART_INSTALL/app/telesave"
+    stage-packages:
+      - libice6
+      - libsm6
+      - libsecret-tools
+      - libnotify-bin
+      - xclip
+      - wl-clipboard
+      - xdg-user-dirs

@@ -22,6 +22,9 @@ public sealed class LinuxPlatform : IShellPlatform
     public string ExecutablePath { get; } = Environment.GetEnvironmentVariable("APPIMAGE") is { Length: > 0 } appImage
         ? appImage : Environment.ProcessPath ?? Path.Combine(AppContext.BaseDirectory, "telesave");
 
+    /// <summary>Installed as a snap: snapd sets SNAP, and the Snap Store delivers updates.</summary>
+    public bool IsStoreInstall { get; } = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("SNAP"));
+
     public ISecretStore Secrets { get; }
     public IPowerManager Power { get; } = new SystemdInhibitPower();
 
@@ -184,7 +187,7 @@ public sealed class LinuxPlatform : IShellPlatform
             [Desktop Entry]
             Type=Application
             Name=TeleSave
-            Exec="{ExecutablePath}" --autostart
+            Exec="{(IsStoreInstall ? "/snap/bin/telesave" : ExecutablePath)}" --autostart
             Icon=telesave
             X-GNOME-Autostart-enabled=true
             """);

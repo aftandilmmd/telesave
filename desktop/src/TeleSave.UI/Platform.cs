@@ -32,4 +32,9 @@ public interface IPlatform
     (IReadOnlyList<string> Files, byte[]? Png) ReadClipboard();
     /// <summary>System-wide keyboard shortcuts.</summary>
     IGlobalShortcuts Shortcuts { get; }
+    /// <summary>
+    /// Installed from a store (Microsoft Store, Snap Store): the store delivers updates, and the package sandbox
+    /// keeps file-manager menu entries from reaching the file manager.
+    /// </summary>
+    bool IsStoreInstall => false;
 }

@@ -117,7 +117,7 @@ public sealed partial class AppModel : ObservableObject, IDisposable
             StartClient(credentials);
         if (!backgroundChecks) return;
         _ = PollRemoteConfigAsync(_lifetime.Token);
-        _ = PollUpdatesAsync(_lifetime.Token);
+        if (!platform.IsStoreInstall) _ = PollUpdatesAsync(_lifetime.Token);
     }
 
     // MARK: Lifecycle
@@ -564,6 +564,7 @@ public sealed partial class AppModel : ObservableObject, IDisposable
 
     public void ApplyContextMenu()
     {
+        if (Platform.IsStoreInstall) return;
         try { Platform.SetSendToMenu(Settings.ContextMenuEnabled, L10n.T("TeleSave'e gönder")); } catch (Exception) { }
     }
 

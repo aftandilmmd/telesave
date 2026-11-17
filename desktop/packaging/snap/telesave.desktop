@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=TeleSave
+Comment=Upload files to Telegram
+Exec=telesave --send %F
+Icon=${SNAP}/meta/gui/icon.png
+Terminal=false
+Categories=Network;FileTransfer;
+StartupWMClass=telesave

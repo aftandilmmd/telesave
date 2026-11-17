@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Microsoft Store package. make-msix.ps1 fills in the identity from Partner Center (Product identity page). -->
+<Package
+  xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+  xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+  xmlns:desktop="http://schemas.microsoft.com/appx/manifest/desktop/windows10"
+  xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
+  IgnorableNamespaces="uap desktop rescap">
+
+  <Identity Name="$IdentityName$" Publisher="$Publisher$" Version="$Version$" ProcessorArchitecture="$Arch$" />
+
+  <Properties>
+    <DisplayName>TeleSave</DisplayName>
+    <PublisherDisplayName>$PublisherDisplayName$</PublisherDisplayName>
+    <Logo>Assets\StoreLogo.png</Logo>
+  </Properties>
+
+  <Dependencies>
+    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.19041.0" MaxVersionTested="10.0.26100.0" />
+  </Dependencies>
+
+  <Resources>
+    <Resource Language="en-us" />
+    <Resource Language="tr-tr" />
+    <Resource Language="ru-ru" />
+    <Resource Language="az-latn-az" />
+  </Resources>
+
+  <Applications>
+    <Application Id="TeleSave" Executable="TeleSave.exe" EntryPoint="Windows.FullTrustApplication">
+      <uap:VisualElements DisplayName="TeleSave" Description="Drop files, they land in your Telegram Saved Messages."
+                          BackgroundColor="transparent" Square150x150Logo="Assets\Square150x150Logo.png"
+                          Square44x44Logo="Assets\Square44x44Logo.png" />
+      <Extensions>
+        <!-- Launch at login (the Run registry key does not work for packaged apps). Turned on by the app at first start. -->
+        <desktop:Extension Category="windows.startupTask" Executable="TeleSave.exe" EntryPoint="Windows.FullTrustApplication">
+          <desktop:StartupTask TaskId="TeleSaveStartup" Enabled="false" DisplayName="TeleSave" />
+        </desktop:Extension>
+      </Extensions>
+    </Application>
+  </Applications>
+
+  <Capabilities>
+    <Capability Name="internetClient" />
+    <rescap:Capability Name="runFullTrust" />
+  </Capabilities>
+</Package>

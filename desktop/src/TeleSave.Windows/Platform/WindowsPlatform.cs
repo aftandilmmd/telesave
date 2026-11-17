@@ -23,6 +23,22 @@ public sealed class WindowsPlatform : IShellPlatform
     public IReadOnlyList<string> PreferredLanguages => UserLanguages.Get();
     public string ExecutablePath { get; } = Environment.ProcessPath ?? Path.Combine(AppContext.BaseDirectory, "TeleSave.exe");
 
+    /// <summary>Running from the Microsoft Store package (MSIX), which has a package identity.</summary>
+    public static bool IsPackaged { get; } = IsPackagedProcess();
+
+    public bool IsStoreInstall => IsPackaged;
+
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
+    private static extern int GetCurrentPackageFullName(ref int length, StringBuilder? name);
+
+    private static bool IsPackagedProcess()
+    {
+        const int AppModelErrorNoPackage = 15700;
+        var length = 0;
+        try { return GetCurrentPackageFullName(ref length, null) != AppModelErrorNoPackage; }
+        catch (EntryPointNotFoundException) { return false; }
+    }
+
     public WindowsPlatform() => Secrets = new DpapiSecretStore(Path.Combine(DataDirectory, "secrets"));
 
     private WindowsShortcuts? _shortcuts;
@@ -103,10 +119,19 @@ public sealed class WindowsPlatform : IShellPlatform
 
     private const string RunKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
 
+    /// <summary>Declared in the MSIX manifest (windows.startupTask); a packaged app cannot use the Run key.</summary>
+    private const string StartupTaskId = "TeleSaveStartup";
+
+    private static global::Windows.ApplicationModel.StartupTask PackageStartupTask() =>
+        global::Windows.ApplicationModel.StartupTask.GetAsync(StartupTaskId).AsTask().GetAwaiter().GetResult();
+
     public bool IsAutostartEnabled
     {
         get
         {
+            if (IsPackaged)
+                return PackageStartupTask().State is global::Windows.ApplicationModel.StartupTaskState.Enabled
+                    or global::Windows.ApplicationModel.StartupTaskState.EnabledByPolicy;
             using var run = Registry.CurrentUser.OpenSubKey(RunKey);
             return run?.GetValue("TeleSave") is string;
         }
@@ -114,6 +139,13 @@ public sealed class WindowsPlatform : IShellPlatform
 
     public void SetAutostart(bool enabled)
     {
+        if (IsPackaged)
+        {
+            var task = PackageStartupTask();
+            if (enabled) task.RequestEnableAsync().AsTask().GetAwaiter().GetResult();
+            else task.Disable();
+            return;
+        }
         using var run = Registry.CurrentUser.CreateSubKey(RunKey);
         if (enabled) run.SetValue("TeleSave", $"\"{ExecutablePath}\" --autostart");
         else run.DeleteValue("TeleSave", throwOnMissingValue: false);

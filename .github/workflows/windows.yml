@@ -232,6 +232,19 @@ jobs:
         with:
           name: windows-release
           path: desktop/dist
+      - name: Microsoft Store bundle (.msixbundle)
+        shell: pwsh
+        env:
+          # Partner Center › TeleSave › Product identity. Until they are set, a placeholder identity
+          # still checks that the package builds (that bundle cannot be uploaded).
+          MSSTORE_IDENTITY_NAME: ${{ vars.MSSTORE_IDENTITY_NAME || 'TeleSave.Placeholder' }}
+          MSSTORE_PUBLISHER: ${{ vars.MSSTORE_PUBLISHER || 'CN=00000000-0000-0000-0000-000000000000' }}
+          MSSTORE_PUBLISHER_DISPLAY_NAME: ${{ vars.MSSTORE_PUBLISHER_DISPLAY_NAME || 'TeleSave' }}
+        run: desktop/packaging/windows/make-msix.ps1 -Version ${{ steps.version.outputs.value }} -PublishRoot desktop/publish -OutDir desktop/store
+      - uses: actions/upload-artifact@v4
+        with:
+          name: microsoft-store
+          path: desktop/store
       - name: Attach to GitHub release
         if: github.event_name == 'release'
         env:

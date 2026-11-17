@@ -432,7 +432,7 @@ public sealed class SettingsPage : ModelPage
             Toggle(L10n.T("Görev çubuğunda göster"), s.ShowInTaskbar, v => s with { ShowInTaskbar = v },
                 L10n.T("Dosyayı görev çubuğundaki TeleSave düğmesinin üstüne sürükleyince bırakma paneli açılır.")),
             Toggle(L10n.T("Sağ tık menüsünde “%@”", L10n.T("TeleSave'e gönder")), s.ContextMenuEnabled, v => s with { ContextMenuEnabled = v },
-                L10n.T("Gezgin'de dosya ve klasörlere sağ tıklayınca görünür.")),
+                L10n.T("Gezgin'de dosya ve klasörlere sağ tıklayınca görünür.")).With(c => c.IsVisible = !Model.Platform.IsStoreInstall),
             Toggle(L10n.T("Ekran kenarında bırakma şeridi"), s.EdgeShelf, v => s with { EdgeShelf = v },
                 L10n.T("Ekranın sağ kenarında ince bir şerit; üstüne dosya sürükleyince genişler.")),
             Toggle(L10n.T("Sohbetteki tüm dosyaları göster"), s.ShowChatFiles, v => s with { ShowChatFiles = v },

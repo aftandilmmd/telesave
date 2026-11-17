@@ -24,9 +24,9 @@ PROVISIONING_PROFILE="$PROVISIONING_PROFILE" \
 VERSION="$VERSION" BUILD="$BUILD" BUNDLE_ID="$BUNDLE_ID" \
   scripts/build-app.sh
 
-# Export compliance: TDLib uses encryption (TLS and Telegram's MTProto) to talk to Telegram's servers.
-/usr/libexec/PlistBuddy -c "Add :ITSAppUsesNonExemptEncryption bool ${USES_NON_EXEMPT_ENCRYPTION:-true}" dist/appstore/TeleSave.app/Contents/Info.plist 2>/dev/null \
-  || /usr/libexec/PlistBuddy -c "Set :ITSAppUsesNonExemptEncryption ${USES_NON_EXEMPT_ENCRYPTION:-true}" dist/appstore/TeleSave.app/Contents/Info.plist
+# Export compliance: only standard encryption (TLS, MTProto) for talking to Telegram; declared exempt.
+/usr/libexec/PlistBuddy -c "Add :ITSAppUsesNonExemptEncryption bool ${USES_NON_EXEMPT_ENCRYPTION:-false}" dist/appstore/TeleSave.app/Contents/Info.plist 2>/dev/null \
+  || /usr/libexec/PlistBuddy -c "Set :ITSAppUsesNonExemptEncryption ${USES_NON_EXEMPT_ENCRYPTION:-false}" dist/appstore/TeleSave.app/Contents/Info.plist
 # Info.plist changed after signing: sign again.
 codesign --force --options runtime --entitlements dist/appstore/entitlements.plist --sign "$APP_IDENTITY" dist/appstore/TeleSave.app
 codesign --verify --strict dist/appstore/TeleSave.app

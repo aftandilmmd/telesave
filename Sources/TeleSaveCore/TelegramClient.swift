@@ -228,5 +228,7 @@ public protocol TelegramClient: UploadTransport {
     /// One page of file messages in a chat, newest first. Pass the previous page's cursor to continue; nil starts over.
     func searchChatFiles(in destination: UploadDestination?, query: String, filter: ChatFileFilter,
                          cursor: ChatFileCursor?, limit: Int) async throws -> ChatFilePage
+    /// Sends a plain text message (at most ClipboardText.messageLimit UTF-16 units). Returns once TDLib accepted it.
+    func sendText(_ text: String, to destination: UploadDestination?) async throws
     func close()
 }

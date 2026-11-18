@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 # Builds the app, packs dist/TeleSave-<version>.dmg and, if NOTARY_PROFILE is set, notarizes + staples it.
+# With SPARKLE_PUBLIC_KEY in Config/Secrets.env it also writes dist/appcast.xml (signed with the private key from
+# the login keychain, or SPARKLE_KEY_FILE); attach it to the GitHub release together with the DMG.
 #
 # One-time notarization setup (Developer ID account required):
 #   xcrun notarytool store-credentials telesave --apple-id <apple-id> --team-id <team-id>
@@ -32,5 +34,17 @@ if [[ -n "${NOTARY_PROFILE:-}" ]]; then
   spctl -a -t open --context context:primary-signature -v "$DMG"
 else
   echo "› NOTARY_PROFILE not set: skipping notarization (Gatekeeper will warn on other Macs)"
+fi
+SPARKLE_PUBLIC_KEY="${SPARKLE_PUBLIC_KEY:-}"
+[[ -f Config/Secrets.env ]] && source Config/Secrets.env
+if [[ -n "$SPARKLE_PUBLIC_KEY" ]]; then
+  echo "› Writing appcast.xml"
+  FEED=$(mktemp -d)
+  cp "$DMG" "$FEED/"
+  .build/artifacts/sparkle/Sparkle/bin/generate_appcast ${SPARKLE_KEY_FILE:+--ed-key-file "$SPARKLE_KEY_FILE"} \
+    --download-url-prefix "https://github.com/aftandilmmd/telesave/releases/download/v${VERSION}/" \
+    -o dist/appcast.xml "$FEED"
+  rm -rf "$FEED"
+  echo "✓ dist/appcast.xml (upload it to the v${VERSION} release next to the DMG)"
 fi
 echo "✓ $DMG"

@@ -53,3 +53,23 @@ final class UpdateCheckerTests: XCTestCase {
         XCTAssertEqual(release?.version, "0.3.0")
     }
 }
+
+final class ReleaseAssetTests: XCTestCase {
+    func testParsesAssetURLSizeAndDigest() throws {
+        let data = try JSONSerialization.data(withJSONObject: [
+            "tag_name": "v0.5.0", "html_url": "https://github.com/a/b/releases/tag/v0.5.0",
+            "assets": [
+                ["name": "TeleSave-0.5.0.dmg", "browser_download_url": "https://github.com/a/b/releases/download/v0.5.0/TeleSave-0.5.0.dmg",
+                 "size": 1234, "digest": "sha256:ABCDEF"],
+                ["name": "appcast.xml"]
+            ]
+        ])
+        let release = try XCTUnwrap(ReleaseInfo.parse(data))
+        let dmg = try XCTUnwrap(release.dmg)
+        XCTAssertEqual(dmg.url?.lastPathComponent, "TeleSave-0.5.0.dmg")
+        XCTAssertEqual(dmg.size, 1234)
+        XCTAssertEqual(dmg.sha256, "abcdef")
+        XCTAssertNil(release.assets[1].url)
+        XCTAssertNil(release.assets[1].sha256)
+    }
+}

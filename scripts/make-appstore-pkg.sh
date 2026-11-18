@@ -16,6 +16,7 @@ BUNDLE_ID="${BUNDLE_ID:-com.telesave.app}"
 mkdir -p dist/appstore
 sed -e "s/__TEAM_ID__/$TEAM_ID/g" -e "s/__BUNDLE_ID__/$BUNDLE_ID/g" Config/TeleSave-AppStore.entitlements > dist/appstore/entitlements.plist
 
+TELESAVE_APPSTORE=1 \
 APP=dist/appstore/TeleSave.app \
 ENTITLEMENTS=dist/appstore/entitlements.plist \
 SWIFT_FLAGS="-Xswiftc -DAPPSTORE" \

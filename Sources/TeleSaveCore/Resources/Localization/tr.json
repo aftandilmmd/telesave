@@ -208,6 +208,24 @@
     "Bu masaüstünde uygulamalar genel kısayol kaydedemez. Sistem ayarlarındaki klavye kısayollarından şu komuta bir kısayol atayın: %@": "Bu masaüstünde uygulamalar genel kısayol kaydedemez. Sistem ayarlarındaki klavye kısayollarından şu komuta bir kısayol atayın: %@",
     "Dosya yöneticisinde Ctrl+C ile kopyaladığınız dosyaları ya da bir ekran görüntüsünü her yerden gönderir.": "Dosya yöneticisinde Ctrl+C ile kopyaladığınız dosyaları ya da bir ekran görüntüsünü her yerden gönderir.",
     "Değiştirmek için tıklayın, sonra yeni tuş kombinasyonuna basın. Esc: vazgeç, Backspace: kapat.": "Değiştirmek için tıklayın, sonra yeni tuş kombinasyonuna basın. Esc: vazgeç, Backspace: kapat.",
-    "Ctrl, Alt veya %@ ile birlikte bir harf, rakam ya da F tuşuna basın.": "Ctrl, Alt veya %@ ile birlikte bir harf, rakam ya da F tuşuna basın."
+    "Ctrl, Alt veya %@ ile birlikte bir harf, rakam ya da F tuşuna basın.": "Ctrl, Alt veya %@ ile birlikte bir harf, rakam ya da F tuşuna basın.",
+    "Kopyalanan metni de gönder": "Kopyalanan metni de gönder",
+    "Kapalıyken yalnızca dosya ve görseller gönderilir.": "Kapalıyken yalnızca dosya ve görseller gönderilir.",
+    "Metni gönder": "Metni gönder",
+    "Mesaj olarak": "Mesaj olarak",
+    ".txt dosyası olarak": ".txt dosyası olarak",
+    "Panoda gönderilecek dosya, görsel ya da metin yok.": "Panoda gönderilecek dosya, görsel ya da metin yok.",
+    "Yapıştırılan metin %@.txt": "Yapıştırılan metin %@.txt",
+    "Metin gönderildi.": "Metin gönderildi.",
+    "Metin gönderilemedi: %@": "Metin gönderilemedi: %@",
+    "Metin kaydedilemedi: %@": "Metin kaydedilemedi: %@",
+    "Parola yöneticisinden kopyalanan metin gönderilmez.": "Parola yöneticisinden kopyalanan metin gönderilmez.",
+    "TeleSave %@ yayımlandı.": "TeleSave %@ yayımlandı.",
+    "Güncelle": "Güncelle",
+    "Güncelleme indiriliyor… %@": "Güncelleme indiriliyor… %@",
+    "Güncelleme kuruluyor…": "Güncelleme kuruluyor…",
+    "Güncelleme indirilemedi: %@": "Güncelleme indirilemedi: %@",
+    "Güncelleme otomatik kurulamadı. Yeni sürüm İndirilenler klasörüne indirildi.": "Güncelleme otomatik kurulamadı. Yeni sürüm İndirilenler klasörüne indirildi.",
+    "TeleSave'i Uygulamalar klasörüne sürükleyip eskisinin yerine koyun, sonra yeniden açın.": "TeleSave'i Uygulamalar klasörüne sürükleyip eskisinin yerine koyun, sonra yeniden açın."
   }
 }

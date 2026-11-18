@@ -53,10 +53,18 @@ Name: "{userprograms}\TeleSave"; Filename: "{app}\TeleSave.exe"; AppUserModelID:
 
 [Run]
 Filename: "{app}\TeleSave.exe"; Description: "{cm:LaunchProgram,TeleSave}"; Flags: nowait postinstall skipifsilent
+; In-app update: the app runs this installer with /VERYSILENT /RELAUNCH=1 and quits; start the new version afterwards.
+Filename: "{app}\TeleSave.exe"; Flags: nowait skipifnotsilent; Check: ShouldRelaunch
 
 [UninstallRun]
 ; Removes the Explorer menu entries, the Send-to shortcut and launch-at-login.
 Filename: "{app}\TeleSave.exe"; Parameters: "--cleanup"; Flags: runhidden waituntilterminated; RunOnceId: "TeleSaveCleanup"
+
+[Code]
+function ShouldRelaunch: Boolean;
+begin
+  Result := ExpandConstant('{param:RELAUNCH|0}') = '1';
+end;
 
 [UninstallDelete]
 Type: filesandordirs; Name: "{app}"

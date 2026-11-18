@@ -33,6 +33,14 @@ struct SettingsView: View {
                         Text(L("Zip olarak")).tag(FolderMode.zip)
                         Text(L("İçindeki dosyalar ayrı ayrı")).tag(FolderMode.expand)
                     }
+                    Toggle(L("Kopyalanan metni de gönder"), isOn: $model.settings.pasteTextEnabled)
+                        .help(L("Kapalıyken yalnızca dosya ve görseller gönderilir."))
+                    if model.settings.pasteTextEnabled {
+                        Picker(L("Metni gönder"), selection: $model.settings.textPasteMode) {
+                            Text(L("Mesaj olarak")).tag(TextPasteMode.message)
+                            Text(L(".txt dosyası olarak")).tag(TextPasteMode.file)
+                        }
+                    }
                     Stepper(L("Aynı anda yükleme: %@", String(model.settings.maxConcurrent)), value: $model.settings.maxConcurrent, in: 1...4)
                     TextField(L("Açıklama şablonu"), text: $model.settings.captionTemplate, prompt: Text(L("ör. #telesave {filename}")))
                     Text(L("Değişkenler: {filename} {date} {size}"))
@@ -103,7 +111,11 @@ struct SettingsView: View {
                     // <GitHub> TeleSave <version> [update] ↗ — opens the new release if there is one, else the repo.
                     // A plain button: Link would draw the text in the accent color, which is hard to read here.
                     Button {
-                        NSWorkspace.shared.open(model.availableUpdate?.pageURL ?? UpdateChecker.repositoryURL)
+                        if let update = model.availableUpdate {
+                            model.updater.install(update)
+                        } else {
+                            NSWorkspace.shared.open(UpdateChecker.repositoryURL)
+                        }
                     } label: {
                         HStack(spacing: 8) {
                             Image(nsImage: GitHubMark.image)

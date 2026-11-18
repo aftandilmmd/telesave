@@ -363,13 +363,7 @@ struct RemoteBanner: View {
                        symbol: "wifi.slash", color: .orange)
             }
             if let update = model.availableUpdate {
-                Button {
-                    NSWorkspace.shared.open(update.pageURL)
-                } label: {
-                    banner(L("TeleSave %@ yayımlandı. İndirmek için tıklayın.", update.version),
-                           symbol: "arrow.down.circle.fill", color: .accentColor)
-                }
-                .buttonStyle(.plain)
+                UpdateBanner(update: update, updater: model.updater)
             }
             if model.updateRequired {
                 banner(L("Bu TeleSave sürümü artık desteklenmiyor. Lütfen en yeni sürümü yükleyin."),
@@ -391,6 +385,48 @@ struct RemoteBanner: View {
         }
         .padding(8)
         .background(RoundedRectangle(cornerRadius: 8).fill(color.opacity(0.12)))
+    }
+}
+
+/// "TeleSave x.y is out. [Update]", then download progress while the update is installed.
+struct UpdateBanner: View {
+    let update: ReleaseInfo
+    let updater: AppUpdater
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "arrow.down.circle.fill").foregroundStyle(Color.accentColor)
+            switch updater.phase {
+            case .idle:
+                Text(L("TeleSave %@ yayımlandı.", update.version))
+                    .font(.caption)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                // Not in the key view loop: the panel opens focused, and a stray Space/Return must not restart the app.
+                Button(L("Güncelle")) { updater.install(update) }
+                    .controlSize(.small)
+                    .buttonStyle(.borderedProminent)
+                    .focusable(false)
+            case .checking, .downloading(nil):
+                Text(L("Güncelleme indiriliyor… %@", ""))
+                    .font(.caption)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                ProgressView().controlSize(.small)
+            case .downloading(let fraction?):
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(L("Güncelleme indiriliyor… %@", "\(Int(fraction * 100))%"))
+                        .font(.caption)
+                        .monospacedDigit()
+                    ProgressView(value: fraction).controlSize(.small)
+                }
+            case .installing:
+                Text(L("Güncelleme kuruluyor…"))
+                    .font(.caption)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                ProgressView().controlSize(.small)
+            }
+        }
+        .padding(8)
+        .background(RoundedRectangle(cornerRadius: 8).fill(Color.accentColor.opacity(0.12)))
     }
 }
 

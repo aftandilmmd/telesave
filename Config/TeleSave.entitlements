@@ -17,5 +17,11 @@
 	</array>
 	<key>com.apple.security.files.bookmarks.app-scope</key>
 	<true/>
+	<!-- Sparkle's installer launcher (in-place updates from the sandbox). -->
+	<key>com.apple.security.temporary-exception.mach-lookup.global-name</key>
+	<array>
+		<string>__BUNDLE_ID__-spks</string>
+		<string>__BUNDLE_ID__-spki</string>
+	</array>
 </dict>
 </plist>

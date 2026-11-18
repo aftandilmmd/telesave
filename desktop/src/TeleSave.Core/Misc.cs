@@ -4,8 +4,10 @@ using System.Text.Json.Nodes;
 namespace TeleSave.Core;
 
 /// <summary>Latest published release on GitHub that has a download for this platform.</summary>
-public sealed record ReleaseInfo(string Version, Uri PageUrl)
+public sealed record ReleaseInfo(string Version, Uri PageUrl, IReadOnlyList<ReleaseAsset> Assets)
 {
+    public ReleaseInfo(string version, Uri pageUrl) : this(version, pageUrl, []) { }
+
     /// <summary>
     /// Parses the GitHub REST releases/latest response. Drafts, pre-releases and releases without an
     /// asset for this platform are ignored, so a Windows-only fix never prompts macOS users and vice versa.
@@ -19,13 +21,24 @@ public sealed record ReleaseInfo(string Version, Uri PageUrl)
             var tag = root["tag_name"]?.GetValue<string>();
             var page = root["html_url"]?.GetValue<string>();
             if (tag is null || page is null) return null;
-            var assets = (root["assets"] as JsonArray)?.OfType<JsonObject>().Select(a => a["name"]?.GetValue<string>() ?? "") ?? [];
-            if (!assets.Any(isPlatformAsset)) return null;
+            var assets = (root["assets"] as JsonArray)?.OfType<JsonObject>().Select(ParseAsset).ToList() ?? [];
+            if (!assets.Any(a => isPlatformAsset(a.Name))) return null;
             var version = tag.TrimStart('v', 'V');
             if (version.Length == 0 || !char.IsDigit(version[0])) return null;
-            return new ReleaseInfo(version, new Uri(page));
+            return new ReleaseInfo(version, new Uri(page), assets);
         }
         catch (JsonException) { return null; }
+    }
+
+    private static ReleaseAsset ParseAsset(JsonObject json)
+    {
+        var url = json["browser_download_url"]?.GetValue<string>();
+        var digest = json["digest"]?.GetValue<string>();
+        return new ReleaseAsset(
+            json["name"]?.GetValue<string>() ?? "",
+            Uri.TryCreate(url, UriKind.Absolute, out var uri) ? uri : null,
+            json["size"]?.GetValue<long>() ?? 0,
+            digest is not null && digest.StartsWith("sha256:", StringComparison.OrdinalIgnoreCase) ? digest[7..].ToLowerInvariant() : null);
     }
 
     public bool IsNewerThan(string current) => AppVersion.Compare(Version, current) > 0;
@@ -38,6 +51,9 @@ public static class UpdateChecker
 
     /// <summary>Windows builds are published as "TeleSave-x.y.z-windows-…".</summary>
     public static bool IsWindowsAsset(string name) => name.Contains("-windows-", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>Linux builds are published as "TeleSave-x.y.z-linux-…".</summary>
+    public static bool IsLinuxAsset(string name) => name.Contains("-linux-", StringComparison.OrdinalIgnoreCase);
 
     public delegate Task<(int Status, string Body)> Fetch(Uri url);
 

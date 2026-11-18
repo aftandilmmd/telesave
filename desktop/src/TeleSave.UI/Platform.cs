@@ -30,6 +30,15 @@ public interface IPlatform
     string AppVersion { get; }
     /// <summary>Files copied in the file manager, or an image (PNG bytes) on the clipboard.</summary>
     (IReadOnlyList<string> Files, byte[]? Png) ReadClipboard();
+    /// <summary>Plain text on the clipboard; Concealed when a password manager marked it as secret.</summary>
+    (string? Text, bool Concealed) ReadClipboardText() => (null, false);
+    /// <summary>How this copy was installed (decides how updates are put in place).</summary>
+    InstallKind UpdateInstallKind => InstallKind.Unknown;
+    /// <summary>
+    /// Puts a downloaded update in place and arranges the restart. True: the app must now quit; false: not possible
+    /// (the caller falls back to saving the download in Downloads).
+    /// </summary>
+    Task<bool> ApplyUpdateAsync(string file, InstallKind kind) => Task.FromResult(false);
     /// <summary>System-wide keyboard shortcuts.</summary>
     IGlobalShortcuts Shortcuts { get; }
     /// <summary>

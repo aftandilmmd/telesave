@@ -58,6 +58,7 @@ public sealed class ShellApp : Application
             if (InitialPaths.Count > 0) Receive(InitialPaths);
             else if (!LaunchedAtLogin || _model.Phase == AppModel.AppPhase.NeedsCredentials) _panel.ShowPanel();
 
+            _model.QuitRequested += () => desktop.Shutdown();
             desktop.Exit += (_, _) =>
             {
                 _model.Shutdown();

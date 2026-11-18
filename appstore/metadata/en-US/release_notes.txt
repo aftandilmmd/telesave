@@ -1,1 +1,1 @@
-First release on the Mac App Store.
+New: send copied text. Turn on “Also send copied text” in Settings, then paste with ⌘V or the global shortcut. Choose whether text goes as a message or as a .txt file. Long text is split into several messages; text copied from a password manager is never sent.

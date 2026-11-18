@@ -37,6 +37,7 @@ final class AppModel {
     private(set) var updateRequired = false
     /// Newer release on GitHub, if any.
     private(set) var availableUpdate: ReleaseInfo?
+    let updater = AppUpdater()
     private var updateTask: Task<Void, Never>?
 
     var appVersion: String {
@@ -153,6 +154,7 @@ final class AppModel {
     private func startUpdateChecks() {
         // App Store builds are updated by the App Store; pointing users elsewhere is not allowed.
         guard !AppSettings.isAppStoreBuild else { return }
+        updater.onNotice = { [weak self] in self?.showNotice($0) }
         updateTask = Task { [weak self] in
             while !Task.isCancelled {
                 let release = await UpdateChecker.latestRelease()
@@ -519,8 +521,8 @@ final class AppModel {
         if !pasteFromClipboard(viaShortcut: true) { onRequestPopover?() }
     }
 
-    /// Sends what is on the clipboard: files copied in Finder, or an image (e.g. a screenshot copied with ⌃⇧⌘4).
-    /// Returns false when there was nothing to send.
+    /// Sends what is on the clipboard: files copied in Finder, copied text (when turned on in Settings), or an image
+    /// (e.g. a screenshot copied with ⌃⇧⌘4). Returns false when there was nothing to send.
     @discardableResult
     func pasteFromClipboard(viaShortcut: Bool = false) -> Bool {
         let pasteboard = NSPasteboard.general
@@ -529,24 +531,76 @@ final class AppModel {
             handleDrop(urls, fromShortcut: viaShortcut)
             return true
         }
+        // Text before images: Excel, Numbers and others put both the text and a rendered picture of it on the clipboard.
+        if settings.pasteTextEnabled, let text = ClipboardText.prepare(pasteboard.string(forType: .string)) {
+            // Password managers mark copied secrets as concealed (nspasteboard.org).
+            if pasteboard.types?.contains(NSPasteboard.PasteboardType("org.nspasteboard.ConcealedType")) == true {
+                showNotice(L("Parola yöneticisinden kopyalanan metin gönderilmez."))
+                return false
+            }
+            return pasteText(text, viaShortcut: viaShortcut)
+        }
         guard let png = Self.pngData(from: pasteboard) else {
-            showNotice(L("Panoda gönderilecek dosya ya da görsel yok."))
+            showNotice(settings.pasteTextEnabled ? L("Panoda gönderilecek dosya, görsel ya da metin yok.")
+                                                 : L("Panoda gönderilecek dosya ya da görsel yok."))
             return false
         }
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd 'at' HH.mm.ss"
-        // Own staging subfolder: temporary files are cleaned up together with their folder.
-        let folder = AppPaths.staging.appendingPathComponent(UUID().uuidString, isDirectory: true)
-        let file = folder.appendingPathComponent(L("Yapıştırılan görsel %@.png", formatter.string(from: Date())))
         do {
-            try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-            try png.write(to: file)
+            let file = try Self.writeStagingFile(png, named: L("Yapıştırılan görsel %@.png", Self.pasteTimestamp()))
             handleDrop([file], fromShortcut: viaShortcut, temporary: true)
             return true
         } catch {
             showNotice(L("Görsel kaydedilemedi: %@", error.localizedDescription))
             return false
         }
+    }
+
+    private func pasteText(_ text: String, viaShortcut: Bool) -> Bool {
+        switch settings.textPasteMode {
+        case .file:
+            do {
+                let file = try Self.writeStagingFile(Data(text.utf8), named: L("Yapıştırılan metin %@.txt", Self.pasteTimestamp()))
+                handleDrop([file], fromShortcut: viaShortcut, temporary: true)
+                return true
+            } catch {
+                showNotice(L("Metin kaydedilemedi: %@", error.localizedDescription))
+                return false
+            }
+        case .message:
+            guard canUpload, let client else {
+                showNotice(L("Yüklemek için önce Telegram'a giriş yapın."))
+                onRequestPopover?()
+                return true
+            }
+            let target = destination.isSavedMessages ? nil : destination
+            if viaShortcut && !destination.isSavedMessages { onRequestPopover?() }
+            Task {
+                do {
+                    for chunk in ClipboardText.split(text) {
+                        try await client.sendText(chunk, to: target)
+                    }
+                    showNotice(L("Metin gönderildi."))
+                } catch {
+                    showNotice(L("Metin gönderilemedi: %@", error.localizedDescription))
+                }
+            }
+            return true
+        }
+    }
+
+    private static func pasteTimestamp() -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd 'at' HH.mm.ss"
+        return formatter.string(from: Date())
+    }
+
+    /// Writes into its own staging subfolder: temporary files are cleaned up together with their folder.
+    private static func writeStagingFile(_ data: Data, named name: String) throws -> URL {
+        let folder = AppPaths.staging.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let file = folder.appendingPathComponent(name)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        try data.write(to: file)
+        return file
     }
 
     private static func pngData(from pasteboard: NSPasteboard) -> Data? {

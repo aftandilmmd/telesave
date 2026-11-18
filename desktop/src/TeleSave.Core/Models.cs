@@ -111,6 +111,8 @@ public interface ITelegramClient : IUploadTransport, IDisposable
     Task<string> DownloadMessageFileAsync(long messageId, UploadDestination? destination);
     Task DeleteMessagesAsync(IReadOnlyList<long> messageIds, UploadDestination? destination);
     Task<ChatFilePage> SearchChatFilesAsync(UploadDestination? destination, string query, ChatFileFilter filter, ChatFileCursor? cursor, int limit);
+    /// <summary>Sends a plain text message (at most ClipboardText.MessageLimit UTF-16 units). Returns once TDLib accepted it.</summary>
+    Task SendTextAsync(string text, UploadDestination? destination);
     /// <summary>Shuts TDLib down and waits (a few seconds at most).</summary>
     void Close();
 }

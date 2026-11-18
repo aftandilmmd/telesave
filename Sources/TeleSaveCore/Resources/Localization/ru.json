@@ -208,6 +208,24 @@
     "Bu masaüstünde uygulamalar genel kısayol kaydedemez. Sistem ayarlarındaki klavye kısayollarından şu komuta bir kısayol atayın: %@": "На этом рабочем столе приложения не могут регистрировать глобальные сочетания. Назначьте сочетание для этой команды в системных настройках клавиатуры: %@",
     "Dosya yöneticisinde Ctrl+C ile kopyaladığınız dosyaları ya da bir ekran görüntüsünü her yerden gönderir.": "Отправляет файлы, скопированные в файловом менеджере через Ctrl+C, или скопированный снимок экрана — из любого места.",
     "Değiştirmek için tıklayın, sonra yeni tuş kombinasyonuna basın. Esc: vazgeç, Backspace: kapat.": "Нажмите, затем новое сочетание клавиш. Esc — отмена, Backspace — выключить.",
-    "Ctrl, Alt veya %@ ile birlikte bir harf, rakam ya da F tuşuna basın.": "Нажмите букву, цифру или клавишу F вместе с Ctrl, Alt или %@."
+    "Ctrl, Alt veya %@ ile birlikte bir harf, rakam ya da F tuşuna basın.": "Нажмите букву, цифру или клавишу F вместе с Ctrl, Alt или %@.",
+    "Kopyalanan metni de gönder": "Отправлять и скопированный текст",
+    "Kapalıyken yalnızca dosya ve görseller gönderilir.": "Если выключено, отправляются только файлы и изображения.",
+    "Metni gönder": "Отправлять текст",
+    "Mesaj olarak": "Сообщением",
+    ".txt dosyası olarak": "Файлом .txt",
+    "Panoda gönderilecek dosya, görsel ya da metin yok.": "В буфере обмена нет файла, изображения или текста.",
+    "Yapıştırılan metin %@.txt": "Вставленный текст %@.txt",
+    "Metin gönderildi.": "Текст отправлен.",
+    "Metin gönderilemedi: %@": "Не удалось отправить текст: %@",
+    "Metin kaydedilemedi: %@": "Не удалось сохранить текст: %@",
+    "Parola yöneticisinden kopyalanan metin gönderilmez.": "Текст, скопированный из менеджера паролей, не отправляется.",
+    "TeleSave %@ yayımlandı.": "Вышел TeleSave %@.",
+    "Güncelle": "Обновить",
+    "Güncelleme indiriliyor… %@": "Загрузка обновления… %@",
+    "Güncelleme kuruluyor…": "Установка обновления…",
+    "Güncelleme indirilemedi: %@": "Не удалось загрузить обновление: %@",
+    "Güncelleme otomatik kurulamadı. Yeni sürüm İndirilenler klasörüne indirildi.": "Не удалось установить обновление автоматически. Новая версия сохранена в папку «Загрузки».",
+    "TeleSave'i Uygulamalar klasörüne sürükleyip eskisinin yerine koyun, sonra yeniden açın.": "Перетащите TeleSave в «Программы», заменив старую версию, и откройте снова."
   }
 }

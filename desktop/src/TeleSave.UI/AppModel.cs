@@ -10,6 +10,8 @@ using TeleSave.TdLib;
 namespace TeleSave.UI;
 
 /// <summary>App state and actions (port of the macOS AppModel). All members are used on the UI thread.</summary>
+public enum UpdatePhase { Idle, Downloading, Installing }
+
 public sealed partial class AppModel : ObservableObject, IDisposable
 {
     public enum AppPhase { NeedsCredentials, Running }
@@ -38,6 +40,9 @@ public sealed partial class AppModel : ObservableObject, IDisposable
     [ObservableProperty] private string? _remoteMessage;
     [ObservableProperty] private bool _updateRequired;
     [ObservableProperty] private ReleaseInfo? _availableUpdate;
+    [ObservableProperty] private UpdatePhase _updatePhase;
+    /// <summary>0…1 while downloading an update; null while the size is unknown.</summary>
+    [ObservableProperty] private double? _updateProgress;
     [ObservableProperty] private UploadDestination _destination = UploadDestination.SavedMessages;
     [ObservableProperty] private IReadOnlyList<UploadDestination> _recentDestinations = [];
     [ObservableProperty] private IReadOnlyList<ChatSummary> _chats = [];
@@ -60,6 +65,8 @@ public sealed partial class AppModel : ObservableObject, IDisposable
     public event Action? PanelRequested;
     /// <summary>Asks the window layer to show or hide the panel (global shortcut).</summary>
     public event Action? PanelToggleRequested;
+    /// <summary>Asks the app to quit (an update is being installed and will restart it).</summary>
+    public event Action? QuitRequested;
 
     // MARK: Dependencies and paths
 
@@ -351,10 +358,7 @@ public sealed partial class AppModel : ObservableObject, IDisposable
     {
         try
         {
-            var folder = Path.Combine(StagingPath, Guid.NewGuid().ToString());
-            Directory.CreateDirectory(folder);
-            var file = Path.Combine(folder, L10n.T("Yapıştırılan görsel %@.png", DateTime.Now.ToString("yyyy-MM-dd 'at' HH.mm.ss", System.Globalization.CultureInfo.InvariantCulture)));
-            File.WriteAllBytes(file, png);
+            var file = WriteStagingFile(png, L10n.T("Yapıştırılan görsel %@.png", PasteTimestamp()));
             HandleDrop([file], temporary: true, fromShortcut: fromShortcut);
         }
         catch (Exception e)
@@ -363,18 +367,86 @@ public sealed partial class AppModel : ObservableObject, IDisposable
         }
     }
 
-    /// <summary>Ctrl+V / "Paste from clipboard": copied files, or a copied image / screenshot. False if there was nothing.</summary>
+    /// <summary>
+    /// Ctrl+V / "Paste from clipboard": copied files, copied text (when turned on in Settings), or a copied image /
+    /// screenshot. False if there was nothing.
+    /// </summary>
     public bool PasteFromClipboard(bool fromShortcut = false)
     {
         var (files, png) = Platform.ReadClipboard();
-        if (files.Count > 0) HandleDrop(files, fromShortcut: fromShortcut);
-        else if (png is not null) HandlePastedImage(png, fromShortcut);
-        else
+        if (files.Count > 0)
         {
-            ShowNotice(L10n.T("Panoda gönderilecek dosya ya da görsel yok."));
-            return false;
+            HandleDrop(files, fromShortcut: fromShortcut);
+            return true;
         }
+        // Text before images: Excel and others put both the text and a rendered picture of it on the clipboard.
+        if (Settings.PasteTextEnabled && Platform.ReadClipboardText() is var (raw, concealed) && ClipboardText.Prepare(raw) is { } text)
+        {
+            if (concealed)
+            {
+                ShowNotice(L10n.T("Parola yöneticisinden kopyalanan metin gönderilmez."));
+                return false;
+            }
+            return PasteText(text, fromShortcut);
+        }
+        if (png is not null)
+        {
+            HandlePastedImage(png, fromShortcut);
+            return true;
+        }
+        ShowNotice(Settings.PasteTextEnabled ? L10n.T("Panoda gönderilecek dosya, görsel ya da metin yok.") : L10n.T("Panoda gönderilecek dosya ya da görsel yok."));
+        return false;
+    }
+
+    private bool PasteText(string text, bool fromShortcut)
+    {
+        if (Settings.TextPasteMode == TextPasteMode.File)
+        {
+            try
+            {
+                var file = WriteStagingFile(new System.Text.UTF8Encoding(false).GetBytes(text), L10n.T("Yapıştırılan metin %@.txt", PasteTimestamp()));
+                HandleDrop([file], temporary: true, fromShortcut: fromShortcut);
+                return true;
+            }
+            catch (Exception e)
+            {
+                ShowNotice(L10n.T("Metin kaydedilemedi: %@", e.Message));
+                return false;
+            }
+        }
+        if (!CanUpload || _client is not { } client)
+        {
+            ShowNotice(L10n.T("Yüklemek için önce Telegram'a giriş yapın."));
+            PanelRequested?.Invoke();
+            return true;
+        }
+        var destination = Destination.IsSavedMessages ? null : Destination;
+        if (fromShortcut && destination is not null) PanelRequested?.Invoke();
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                foreach (var chunk in ClipboardText.Split(text)) await client.SendTextAsync(chunk, destination).ConfigureAwait(false);
+                _post(() => ShowNotice(L10n.T("Metin gönderildi.")));
+            }
+            catch (Exception e)
+            {
+                _post(() => ShowNotice(L10n.T("Metin gönderilemedi: %@", e.Message)));
+            }
+        });
         return true;
+    }
+
+    private static string PasteTimestamp() => DateTime.Now.ToString("yyyy-MM-dd 'at' HH.mm.ss", System.Globalization.CultureInfo.InvariantCulture);
+
+    /// <summary>Writes into its own staging subfolder: temporary files are cleaned up together with their folder.</summary>
+    private string WriteStagingFile(byte[] data, string name)
+    {
+        var folder = Path.Combine(StagingPath, Guid.NewGuid().ToString());
+        Directory.CreateDirectory(folder);
+        var file = Path.Combine(folder, name);
+        File.WriteAllBytes(file, data);
+        return file;
     }
 
     // MARK: Global shortcuts
@@ -607,9 +679,64 @@ public sealed partial class AppModel : ObservableObject, IDisposable
     {
         while (!token.IsCancellationRequested)
         {
-            var release = await UpdateChecker.LatestReleaseAsync(UpdateChecker.IsWindowsAsset);
+            var release = await UpdateChecker.LatestReleaseAsync(OperatingSystem.IsWindows() ? UpdateChecker.IsWindowsAsset : UpdateChecker.IsLinuxAsset);
             if (release is not null) _post(() => AvailableUpdate = release.IsNewerThan(AppVersion) ? release : null);
             try { await Task.Delay(TimeSpan.FromHours(24), token); } catch (TaskCanceledException) { return; }
+        }
+    }
+
+    /// <summary>
+    /// "Update": downloads the release, installs it in place and restarts. When that is not possible (portable copy,
+    /// read-only folder, cancelled password prompt, …) the download is saved to Downloads and shown instead.
+    /// </summary>
+    public async Task InstallUpdateAsync()
+    {
+        if (AvailableUpdate is not { } release || UpdatePhase != UpdatePhase.Idle) return;
+        var kind = Platform.UpdateInstallKind;
+        var arch = UpdateInstall.Architecture;
+        var progress = new Progress<double>(fraction => UpdateProgress = fraction);
+        string? downloaded = null;
+        try
+        {
+            UpdatePhase = UpdatePhase.Downloading;
+            if (UpdateInstall.CanInstallInPlace(kind) && UpdateInstall.AssetFor(release, kind, arch) is { } asset)
+            {
+                downloaded = Path.Combine(Root, "updates", asset.Name);
+                await UpdateDownloader.DownloadAsync(asset, downloaded, progress);
+                UpdatePhase = UpdatePhase.Installing;
+                if (await Platform.ApplyUpdateAsync(downloaded, kind))
+                {
+                    QuitRequested?.Invoke();
+                    return;
+                }
+            }
+            if (UpdateInstall.FallbackAsset(release, kind, OperatingSystem.IsWindows(), arch) is not { } fallback)
+            {
+                Platform.OpenUrl(release.PageUrl);
+                return;
+            }
+            var target = MessageFileLocator.UniquePath(Platform.DownloadsDirectory, fallback.Name);
+            if (downloaded is not null && Path.GetFileName(downloaded) == fallback.Name && File.Exists(downloaded))
+            {
+                File.Move(downloaded, target);
+            }
+            else
+            {
+                UpdatePhase = UpdatePhase.Downloading;
+                UpdateProgress = null;
+                await UpdateDownloader.DownloadAsync(fallback, target, progress);
+            }
+            Platform.RevealFile(target);
+            ShowNotice(L10n.T("Güncelleme otomatik kurulamadı. Yeni sürüm İndirilenler klasörüne indirildi."));
+        }
+        catch (Exception e)
+        {
+            ShowNotice(L10n.T("Güncelleme indirilemedi: %@", e.Message));
+        }
+        finally
+        {
+            UpdatePhase = UpdatePhase.Idle;
+            UpdateProgress = null;
         }
     }
 

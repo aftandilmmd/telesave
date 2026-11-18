@@ -213,6 +213,36 @@ public sealed class WindowsPlatform : IShellPlatform
         catch (Exception) { }
         return ([], null);
     }
+
+    public (string? Text, bool Concealed) ReadClipboardText()
+    {
+        try
+        {
+            if (!System.Windows.Forms.Clipboard.ContainsText()) return (null, false);
+            // Password managers mark secrets so clipboard history and monitors skip them.
+            var data = System.Windows.Forms.Clipboard.GetDataObject();
+            var concealed = data?.GetDataPresent("ExcludeClipboardContentFromMonitorProcessing") == true
+                || (data?.GetData("CanIncludeInClipboardHistory") is MemoryStream history && history.Length >= 4 && BitConverter.ToInt32(history.ToArray(), 0) == 0);
+            return (System.Windows.Forms.Clipboard.GetText(), concealed);
+        }
+        catch (Exception) { return (null, false); }
+    }
+
+    /// <summary>Inno Setup installs leave unins000.exe next to the app; a portable copy has none.</summary>
+    public InstallKind UpdateInstallKind => UpdateInstall.Detect(true, AppContext.BaseDirectory, null, File.Exists, _ => true, () => null);
+
+    /// <summary>Runs the new installer silently; it closes this app, installs, and starts the new version (/RELAUNCH=1).</summary>
+    public Task<bool> ApplyUpdateAsync(string file, InstallKind kind)
+    {
+        if (kind != InstallKind.WindowsInstaller) return Task.FromResult(false);
+        try
+        {
+            var info = new ProcessStartInfo(file, "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /CLOSEAPPLICATIONS /RELAUNCH=1") { UseShellExecute = false };
+            using var process = Process.Start(info);
+            return Task.FromResult(process is not null);
+        }
+        catch (Exception) { return Task.FromResult(false); }
+    }
 }
 
 /// <summary>Secrets encrypted with DPAPI for the current Windows user (one file per account).</summary>

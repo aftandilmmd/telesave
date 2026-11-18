@@ -242,6 +242,22 @@ public sealed class TdLibTelegramClient : ITelegramClient
         return messages.Zip(files).Select(p => new SentMessage(Long(p.First["id"]) ?? 0, FileIdIn(p.First, p.Second.Path))).ToList();
     }
 
+    public async Task SendTextAsync(string text, UploadDestination? destination)
+    {
+        var request = new JsonObject
+        {
+            ["@type"] = "sendMessage",
+            ["chat_id"] = await ResolveChatAsync(destination).ConfigureAwait(false),
+            ["input_message_content"] = new JsonObject
+            {
+                ["@type"] = "inputMessageText",
+                ["text"] = new JsonObject { ["@type"] = "formattedText", ["text"] = text, ["entities"] = new JsonArray() }
+            }
+        };
+        if (TopicOf(destination) is { } topic) request["topic_id"] = topic;
+        await RequestAsync(request).ConfigureAwait(false);
+    }
+
     public async Task CancelAsync(IReadOnlyList<long> messageIds, UploadDestination? destination)
     {
         try { await DeleteMessagesAsync(messageIds, destination).ConfigureAwait(false); }

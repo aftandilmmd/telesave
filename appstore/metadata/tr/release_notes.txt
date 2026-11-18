@@ -1,1 +1,1 @@
-Mac App Store'daki ilk sürüm.
+Yeni: kopyalanan metni gönderin. Ayarlar'da “Kopyalanan metni de gönder”i açın, sonra ⌘V ya da genel kısayolla yapıştırın. Metnin mesaj olarak mı yoksa .txt dosyası olarak mı gideceğini seçin. Uzun metinler birkaç mesaja bölünür; parola yöneticisinden kopyalanan metin asla gönderilmez.

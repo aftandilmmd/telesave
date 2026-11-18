@@ -237,13 +237,31 @@ public sealed class MainPage : ModelPage
 
 internal static class StatusBanners
 {
+    /// <summary>"TeleSave x.y is out. [Update]", then download progress while the update is installed.</summary>
+    private static Border UpdateBanner(AppModel model, ReleaseInfo update)
+    {
+        if (model.UpdatePhase == UpdatePhase.Idle)
+        {
+            // Not focusable: the panel opens focused, and a stray Space/Enter must not restart the app.
+            var button = new Button { Content = L10n.T("Güncelle"), Focusable = false, Padding = new Thickness(10, 3), FontSize = 11.5 };
+            button.Classes.Add("accent");
+            button.Click += (_, _) => _ = model.InstallUpdateAsync();
+            return Ui.Banner(L10n.T("TeleSave %@ yayımlandı.", update.Version), Glyph.Download, Ui.Accent, trailing: button);
+        }
+        var bar = new ProgressBar { Width = 70, MinWidth = 70, Height = 4, Minimum = 0, Maximum = 1 };
+        if (model.UpdatePhase == UpdatePhase.Downloading && model.UpdateProgress is { } fraction) bar.Value = fraction;
+        else bar.IsIndeterminate = true;
+        var text = model.UpdatePhase == UpdatePhase.Installing
+            ? L10n.T("Güncelleme kuruluyor…")
+            : L10n.T("Güncelleme indiriliyor… %@", model.UpdateProgress is { } p ? $"{(int)(p * 100)}%" : "");
+        return Ui.Banner(text, Glyph.Download, Ui.Accent, trailing: bar);
+    }
+
     public static IEnumerable<Control> For(AppModel model)
     {
         if (!model.NetworkAvailable)
             yield return Ui.Banner(L10n.T("İnternet bağlantısı yok. Yüklemeler duraklatıldı; bağlantı gelince kendiliğinden devam edecek."), Glyph.NetworkOff, Ui.Orange);
-        if (model.AvailableUpdate is { } update)
-            yield return Ui.Banner(L10n.T("TeleSave %@ yayımlandı. İndirmek için tıklayın.", update.Version), Glyph.Download, Ui.Accent,
-                onClick: () => model.Platform.OpenUrl(update.PageUrl));
+        if (model.AvailableUpdate is { } update) yield return UpdateBanner(model, update);
         if (model.UpdateRequired)
             yield return Ui.Banner(L10n.T("Bu TeleSave sürümü artık desteklenmiyor. Lütfen en yeni sürümü yükleyin."), Glyph.Download, Ui.Red);
         if (model.RemoteMessage is { } message)

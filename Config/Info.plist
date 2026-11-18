@@ -63,5 +63,14 @@
 	<string>__CONFIG_URLS__</string>
 	<key>TSConfigPublicKey</key>
 	<string>__CONFIG_PUBLIC_KEY__</string>
+	<!-- Sparkle: in-place updates, started from TeleSave's own "Update" button (no automatic checks). -->
+	<key>SUFeedURL</key>
+	<string>https://github.com/aftandilmmd/telesave/releases/latest/download/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>__SPARKLE_PUBLIC_KEY__</string>
+	<key>SUEnableInstallerLauncherService</key>
+	<true/>
+	<key>SUEnableAutomaticChecks</key>
+	<false/>
 </dict>
 </plist>

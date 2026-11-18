@@ -32,6 +32,8 @@ public sealed class LinuxPlatform : IShellPlatform
     {
         var fallback = new FileSecretStore(Path.Combine(DataDirectory, "secrets"));
         Secrets = Tool.Exists("secret-tool") ? new SecretToolStore(fallback) : fallback;
+        // Left behind by a tar.gz update (the old folder could not be removed while it was running).
+        TryDeleteDirectory(AppContext.BaseDirectory.TrimEnd('/') + ".old");
     }
 
     public string DownloadsDirectory =>
@@ -241,6 +243,105 @@ public sealed class LinuxPlatform : IShellPlatform
         return ([], null);
     }
 
+    public (string? Text, bool Concealed) ReadClipboardText()
+    {
+        var wayland = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("WAYLAND_DISPLAY")) && Tool.Exists("wl-paste");
+        string? Paste(string type) => wayland ? Tool.Run("wl-paste", "--no-newline", "--type", type) : Tool.Run("xclip", "-selection", "clipboard", "-t", type, "-o");
+        var types = (wayland ? Tool.Run("wl-paste", "--list-types") : Tool.Run("xclip", "-selection", "clipboard", "-t", "TARGETS", "-o"))
+            ?.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries) ?? [];
+        var type = new[] { "text/plain;charset=utf-8", "UTF8_STRING", "text/plain" }.FirstOrDefault(types.Contains);
+        if (type is null) return (null, false);
+        // KeePassXC and KDE's password managers mark secrets with this hint.
+        var concealed = types.Contains("x-kde-passwordManagerHint") && Paste("x-kde-passwordManagerHint")?.Trim() == "secret";
+        return (Paste(type), concealed);
+    }
+
+    // MARK: Updates
+
+    private InstallKind? _installKind;
+
+    public InstallKind UpdateInstallKind => _installKind ??= UpdateInstall.Detect(false, AppContext.BaseDirectory,
+        Environment.GetEnvironmentVariable("APPIMAGE"), File.Exists, IsWritableDirectory, PackageOwner);
+
+    private static string? PackageOwner()
+    {
+        const string executable = "/opt/telesave/telesave";
+        if (Tool.Run("dpkg", "-S", executable) is not null) return "dpkg";
+        if (Tool.Run("rpm", "-qf", executable) is not null) return "rpm";
+        return null;
+    }
+
+    private static bool IsWritableDirectory(string directory)
+    {
+        try
+        {
+            var probe = Path.Combine(directory, $".telesave-write-{Guid.NewGuid():N}");
+            File.WriteAllBytes(probe, []);
+            File.Delete(probe);
+            return true;
+        }
+        catch (Exception) { return false; }
+    }
+
+    public async Task<bool> ApplyUpdateAsync(string file, InstallKind kind)
+    {
+        try
+        {
+            string relaunch;
+            switch (kind)
+            {
+                case InstallKind.AppImage:
+                {
+                    var target = Environment.GetEnvironmentVariable("APPIMAGE")!;
+                    var temporary = target + ".new";
+                    File.Copy(file, temporary, overwrite: true);
+                    File.SetUnixFileMode(temporary, (UnixFileMode)0b111_101_101);
+                    // rename(2) is atomic; the running AppImage keeps its open inode.
+                    File.Move(temporary, target, overwrite: true);
+                    TryDelete(file);
+                    relaunch = target;
+                    break;
+                }
+                case InstallKind.Tarball:
+                {
+                    var directory = AppContext.BaseDirectory.TrimEnd('/');
+                    if (!await UpdateInstall.ReplaceFolderFromTarballAsync(directory, file)) return false;
+                    TryDelete(file);
+                    relaunch = Path.Combine(directory, "telesave");
+                    break;
+                }
+                case InstallKind.Deb or InstallKind.Rpm:
+                {
+                    if (!Tool.Exists("pkexec")) return false;
+                    // Asks for the administrator password; cancelling returns 126.
+                    var info = new ProcessStartInfo("pkexec") { UseShellExecute = false };
+                    foreach (var arg in kind == InstallKind.Deb ? new[] { "dpkg", "-i", file } : new[] { "rpm", "-U", file }) info.ArgumentList.Add(arg);
+                    using var process = Process.Start(info)!;
+                    await process.WaitForExitAsync();
+                    if (process.ExitCode != 0) return false;
+                    TryDelete(file);
+                    relaunch = "/usr/bin/telesave";
+                    break;
+                }
+                default:
+                    return false;
+            }
+            RelaunchAfterExit(relaunch);
+            return true;
+        }
+        catch (Exception) { return false; }
+    }
+
+    /// <summary>Starts the new version once this process has exited (a second instance would only hand over to this one).</summary>
+    private static void RelaunchAfterExit(string executable)
+    {
+        var info = new ProcessStartInfo("/bin/sh") { UseShellExecute = false };
+        foreach (var arg in new[] { "-c", "while kill -0 \"$1\" 2>/dev/null; do sleep 0.2; done; exec \"$2\"", "telesave-relaunch",
+                     Environment.ProcessId.ToString(CultureInfo.InvariantCulture), executable })
+            info.ArgumentList.Add(arg);
+        Process.Start(info)?.Dispose();
+    }
+
     // MARK: Helpers
 
     private static void Write(string path, string content)
@@ -263,6 +364,11 @@ public sealed class LinuxPlatform : IShellPlatform
     private static void TryDelete(string path)
     {
         try { if (File.Exists(path)) File.Delete(path); } catch (Exception) { }
+    }
+
+    private static void TryDeleteDirectory(string path)
+    {
+        try { if (Directory.Exists(path)) Directory.Delete(path, recursive: true); } catch (Exception) { }
     }
 }
 

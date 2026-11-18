@@ -90,7 +90,7 @@ internal static class Ui
         return button;
     }
 
-    public static Border Banner(string text, string glyph, IBrush color, Action? onClose = null, Action? onClick = null)
+    public static Border Banner(string text, string glyph, IBrush color, Action? onClose = null, Action? onClick = null, Control? trailing = null)
     {
         var row = new DockPanel { LastChildFill = true };
         var icon = Icon(glyph, 14, color);
@@ -105,7 +105,14 @@ internal static class Ui
             DockPanel.SetDock(close, Dock.Right);
             row.Children.Add(close);
         }
-        row.Children.Add(Text(text, 11.5, wrap: true));
+        if (trailing is not null)
+        {
+            trailing.Margin = new Thickness(8, 0, 0, 0);
+            trailing.VerticalAlignment = VerticalAlignment.Center;
+            DockPanel.SetDock(trailing, Dock.Right);
+            row.Children.Add(trailing);
+        }
+        row.Children.Add(Text(text, 11.5, wrap: true).With(t => t.VerticalAlignment = VerticalAlignment.Center));
         var border = new Border
         {
             Child = row, Padding = new Thickness(8), CornerRadius = new CornerRadius(8),

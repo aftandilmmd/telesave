@@ -208,6 +208,24 @@
     "Bu masaüstünde uygulamalar genel kısayol kaydedemez. Sistem ayarlarındaki klavye kısayollarından şu komuta bir kısayol atayın: %@": "Bu masaüstündə tətbiqlər ümumi qısayol qeydə ala bilmir. Sistem klaviatura ayarlarında bu əmr üçün qısayol təyin edin: %@",
     "Dosya yöneticisinde Ctrl+C ile kopyaladığınız dosyaları ya da bir ekran görüntüsünü her yerden gönderir.": "Fayl menecerində Ctrl+C ilə kopyaladığınız faylları və ya ekran şəklini istənilən yerdən göndərir.",
     "Değiştirmek için tıklayın, sonra yeni tuş kombinasyonuna basın. Esc: vazgeç, Backspace: kapat.": "Klikləyin, sonra yeni düymə birləşməsini basın. Esc: imtina, Backspace: söndür.",
-    "Ctrl, Alt veya %@ ile birlikte bir harf, rakam ya da F tuşuna basın.": "Ctrl, Alt və ya %@ ilə birlikdə hərf, rəqəm və ya F düyməsi basın."
+    "Ctrl, Alt veya %@ ile birlikte bir harf, rakam ya da F tuşuna basın.": "Ctrl, Alt və ya %@ ilə birlikdə hərf, rəqəm və ya F düyməsi basın.",
+    "Kopyalanan metni de gönder": "Kopyalanan mətni də göndər",
+    "Kapalıyken yalnızca dosya ve görseller gönderilir.": "Söndürülübsə, yalnız fayl və şəkillər göndərilir.",
+    "Metni gönder": "Mətni göndər",
+    "Mesaj olarak": "Mesaj kimi",
+    ".txt dosyası olarak": ".txt faylı kimi",
+    "Panoda gönderilecek dosya, görsel ya da metin yok.": "Panoda göndəriləcək fayl, şəkil və ya mətn yoxdur.",
+    "Yapıştırılan metin %@.txt": "Yapışdırılan mətn %@.txt",
+    "Metin gönderildi.": "Mətn göndərildi.",
+    "Metin gönderilemedi: %@": "Mətn göndərilə bilmədi: %@",
+    "Metin kaydedilemedi: %@": "Mətn saxlanıla bilmədi: %@",
+    "Parola yöneticisinden kopyalanan metin gönderilmez.": "Parol menecerindən kopyalanan mətn göndərilmir.",
+    "TeleSave %@ yayımlandı.": "TeleSave %@ buraxıldı.",
+    "Güncelle": "Yenilə",
+    "Güncelleme indiriliyor… %@": "Yeniləmə endirilir… %@",
+    "Güncelleme kuruluyor…": "Yeniləmə quraşdırılır…",
+    "Güncelleme indirilemedi: %@": "Yeniləmə endirilə bilmədi: %@",
+    "Güncelleme otomatik kurulamadı. Yeni sürüm İndirilenler klasörüne indirildi.": "Yeniləmə avtomatik quraşdırıla bilmədi. Yeni versiya Endirilənlər qovluğuna endirildi.",
+    "TeleSave'i Uygulamalar klasörüne sürükleyip eskisinin yerine koyun, sonra yeniden açın.": "TeleSave-i Proqramlar qovluğuna sürüşdürüb köhnəsini əvəz edin, sonra yenidən açın."
   }
 }

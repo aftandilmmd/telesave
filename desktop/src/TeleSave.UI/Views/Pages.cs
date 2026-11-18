@@ -192,7 +192,7 @@ public sealed class LoginPage : ModelPage
 
     protected override void Refresh()
     {
-        var key = $"{Model.Auth}|{Model.AuthError}|{Model.IsBusy}|{_usePhoneInsteadOfQr}|{Model.NetworkAvailable}|{Model.AvailableUpdate}";
+        var key = $"{Model.Auth}|{Model.AuthError}|{Model.IsBusy}|{_usePhoneInsteadOfQr}|{Model.NetworkAvailable}|{Model.AvailableUpdate}|{Model.UpdatePhase}|{Model.UpdateProgress:F2}";
         if (key == _shownState) return;
         _shownState = key;
         var stack = new StackPanel { Spacing = 12, Margin = new Thickness(20), IsEnabled = !Model.IsBusy };
@@ -417,6 +417,10 @@ public sealed class SettingsPage : ModelPage
             Toggle(L10n.T("Birlikte bırakılanları albüm yap (en fazla 10)"), s.GroupAsAlbum, v => s with { GroupAsAlbum = v }),
             Choice(L10n.T("Klasörler"), [L10n.T("Zip olarak"), L10n.T("İçindeki dosyalar ayrı ayrı")], s.FolderMode == FolderMode.Expand ? 1 : 0,
                 i => s with { FolderMode = i == 1 ? FolderMode.Expand : FolderMode.Zip }),
+            Toggle(L10n.T("Kopyalanan metni de gönder"), s.PasteTextEnabled, v => s with { PasteTextEnabled = v },
+                L10n.T("Kapalıyken yalnızca dosya ve görseller gönderilir.")),
+            Choice(L10n.T("Metni gönder"), [L10n.T("Mesaj olarak"), L10n.T(".txt dosyası olarak")], s.TextPasteMode == TextPasteMode.File ? 1 : 0,
+                i => s with { TextPasteMode = i == 1 ? TextPasteMode.File : TextPasteMode.Message }).With(c => c.IsVisible = s.PasteTextEnabled),
             Choice(L10n.T("Aynı anda yükleme: %@", s.MaxConcurrent.ToString()), ["1", "2", "3", "4"], Math.Clamp(s.MaxConcurrent, 1, 4) - 1,
                 i => s with { MaxConcurrent = i + 1 }),
             Caption()));
@@ -625,7 +629,11 @@ public sealed class SettingsPage : ModelPage
             Background = new SolidColorBrush(Colors.Gray, 0.08), Padding = new Thickness(12, 10), CornerRadius = new CornerRadius(8)
         };
         ToolTip.SetTip(button, Model.AvailableUpdate is null ? $"github.com/{UpdateChecker.Repository}" : L10n.T("Yeni sürümü indir"));
-        button.Click += (_, _) => Model.Platform.OpenUrl(Model.AvailableUpdate?.PageUrl ?? UpdateChecker.RepositoryUrl);
+        button.Click += (_, _) =>
+        {
+            if (Model.AvailableUpdate is not null) _ = Model.InstallUpdateAsync();
+            else Model.Platform.OpenUrl(UpdateChecker.RepositoryUrl);
+        };
         return button;
     }
 }

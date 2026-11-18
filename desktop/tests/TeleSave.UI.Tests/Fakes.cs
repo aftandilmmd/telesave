@@ -89,6 +89,8 @@ public sealed class FakeClient(Action<TelegramEvent> onEvent, AuthState? initial
     public Task<IReadOnlyList<SentMessage>> SendAsync(IReadOnlyList<OutgoingFile> files, UploadDestination? destination) =>
         Task.FromResult<IReadOnlyList<SentMessage>>(files.Select(_ => new SentMessage(++_next, (int)_next)).ToList());
     public Task CancelAsync(IReadOnlyList<long> messageIds, UploadDestination? destination) => Task.CompletedTask;
+    public List<string> SentTexts { get; } = [];
+    public Task SendTextAsync(string text, UploadDestination? destination) { SentTexts.Add(text); return Task.CompletedTask; }
     public void Close() { }
     public void Dispose() { }
 }

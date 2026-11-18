@@ -208,6 +208,24 @@
     "Bu masaüstünde uygulamalar genel kısayol kaydedemez. Sistem ayarlarındaki klavye kısayollarından şu komuta bir kısayol atayın: %@": "On this desktop, apps cannot register global shortcuts. In the system keyboard settings, add a custom shortcut for this command: %@",
     "Dosya yöneticisinde Ctrl+C ile kopyaladığınız dosyaları ya da bir ekran görüntüsünü her yerden gönderir.": "Sends files you copied in the file manager with Ctrl+C, or a copied screenshot, from anywhere.",
     "Değiştirmek için tıklayın, sonra yeni tuş kombinasyonuna basın. Esc: vazgeç, Backspace: kapat.": "Click, then press the new key combination. Esc: cancel, Backspace: turn off.",
-    "Ctrl, Alt veya %@ ile birlikte bir harf, rakam ya da F tuşuna basın.": "Press a letter, digit or F key together with Ctrl, Alt or %@."
+    "Ctrl, Alt veya %@ ile birlikte bir harf, rakam ya da F tuşuna basın.": "Press a letter, digit or F key together with Ctrl, Alt or %@.",
+    "Kopyalanan metni de gönder": "Also send copied text",
+    "Kapalıyken yalnızca dosya ve görseller gönderilir.": "When off, only files and images are sent.",
+    "Metni gönder": "Send text as",
+    "Mesaj olarak": "Message",
+    ".txt dosyası olarak": ".txt file",
+    "Panoda gönderilecek dosya, görsel ya da metin yok.": "There's no file, image or text on the clipboard.",
+    "Yapıştırılan metin %@.txt": "Pasted text %@.txt",
+    "Metin gönderildi.": "Text sent.",
+    "Metin gönderilemedi: %@": "Couldn't send the text: %@",
+    "Metin kaydedilemedi: %@": "Couldn't save the text: %@",
+    "Parola yöneticisinden kopyalanan metin gönderilmez.": "Text copied from a password manager isn't sent.",
+    "TeleSave %@ yayımlandı.": "TeleSave %@ is out.",
+    "Güncelle": "Update",
+    "Güncelleme indiriliyor… %@": "Downloading update… %@",
+    "Güncelleme kuruluyor…": "Installing update…",
+    "Güncelleme indirilemedi: %@": "Couldn't download the update: %@",
+    "Güncelleme otomatik kurulamadı. Yeni sürüm İndirilenler klasörüne indirildi.": "The update couldn't be installed automatically. The new version was saved to your Downloads folder.",
+    "TeleSave'i Uygulamalar klasörüne sürükleyip eskisinin yerine koyun, sonra yeniden açın.": "Drag TeleSave to Applications to replace the old one, then open it again."
   }
 }

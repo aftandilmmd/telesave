@@ -269,6 +269,22 @@ public final class TDLibTelegramClient: TelegramClient, @unchecked Sendable {
         }
     }
 
+    public func sendText(_ text: String, to destination: UploadDestination?) async throws {
+        let chatId = try await resolveChat(destination)
+        var request: TDObject = [
+            "@type": "sendMessage",
+            "chat_id": chatId,
+            "input_message_content": [
+                "@type": "inputMessageText",
+                "text": ["@type": "formattedText", "text": text, "entities": [TDObject]()] as TDObject
+            ] as TDObject
+        ]
+        if let topic = destination?.forumTopicId {
+            request["topic_id"] = ["@type": "messageTopicForum", "forum_topic_id": topic] as TDObject
+        }
+        _ = try await self.request(request)
+    }
+
     public func cancel(messageIds: [Int64], in destination: UploadDestination?) async {
         guard let chatId = try? await resolveChat(destination) else { return }
         // Deleting a pending outgoing message cancels its upload.

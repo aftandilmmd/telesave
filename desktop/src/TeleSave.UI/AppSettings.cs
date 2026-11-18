@@ -25,6 +25,9 @@ public sealed record AppSettings
     public KeyShortcut? UploadShortcut { get; init; } = KeyShortcut.DefaultUpload;
     /// <summary>System-wide shortcut that shows/hides the panel (null = off).</summary>
     public KeyShortcut? PanelShortcut { get; init; } = KeyShortcut.DefaultPanel;
+    /// <summary>Pasting also sends copied text (off by default: the clipboard often holds things not meant to be shared).</summary>
+    public bool PasteTextEnabled { get; init; }
+    public TextPasteMode TextPasteMode { get; init; } = TextPasteMode.Message;
     /// <summary>Set once launch-at-login has been turned on by default on first start.</summary>
     public bool AutostartConfigured { get; init; }
 

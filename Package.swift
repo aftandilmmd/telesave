@@ -1,6 +1,10 @@
 // swift-tools-version: 6.0
 import PackageDescription
 
+// Mac App Store builds (scripts/make-appstore-pkg.sh sets TELESAVE_APPSTORE=1) leave Sparkle out: the App Store
+// delivers updates there. Everywhere else Sparkle installs updates in place.
+let appStore = Context.environment["TELESAVE_APPSTORE"] == "1"
+
 let package = Package(
     name: "TeleSave",
     platforms: [.macOS(.v15)],
@@ -10,7 +14,7 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/Swiftgram/TDLibFramework.git", exact: "1.8.70-23383aef")
-    ],
+    ] + (appStore ? [] : [.package(url: "https://github.com/sparkle-project/Sparkle", exact: "2.8.1")]),
     targets: [
         // Platform-neutral logic: queue, intake, auth mapping, persistence. No TDLib dependency.
         .target(
@@ -30,7 +34,8 @@ let package = Package(
         ),
         .executableTarget(
             name: "TeleSaveApp",
-            dependencies: ["TeleSaveCore", "TeleSaveTDLib"],
+            dependencies: ["TeleSaveCore", "TeleSaveTDLib"]
+                + (appStore ? [] : [.product(name: "Sparkle", package: "Sparkle")]),
             path: "Sources/TeleSaveApp"
         ),
         // Command-line check that TDLib starts and accepts our parameters.

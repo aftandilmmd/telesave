@@ -119,6 +119,8 @@ public class UpdateTests
     [Fact]
     public void DetectsLinuxInstallKinds()
     {
+        // Linux paths; Path.GetDirectoryName turns "/" into "\" on Windows (CI runs these tests there too).
+        if (OperatingSystem.IsWindows()) return;
         string? NoOwner() => null;
         Assert.Equal(InstallKind.AppImage, UpdateInstall.Detect(false, "/tmp/.mount_x/usr/lib/telesave/", "/home/u/Apps/TeleSave.AppImage",
             File.Exists, dir => dir == "/home/u/Apps", NoOwner));
